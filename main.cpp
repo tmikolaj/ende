@@ -1,6 +1,4 @@
 #include <iostream>
-#include <sys/stat.h>
-
 #include "external/raylib/src/raylib.h"
 #include "external/raylib/src/rlgl.h"
 #include "external/raylib/src/raymath.h"
@@ -136,6 +134,10 @@ int main() {
     int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
     int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
 
+    Shader materialPreview = LoadShader("../shaders/material_preview.vs", "../shaders/material_preview.fs");
+    materialPreview.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(materialPreview, "matModel");
+    materialPreview.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(materialPreview, "mvp");
+
     Mesh gridMesh = GenerateGridMesh(10,1.0f);
     Model model = LoadModelFromMesh(gridMesh);
     Mesh& mesh = model.meshes[0];
@@ -145,9 +147,9 @@ int main() {
 
     model.materials[0].shader = solidShader;
     Vector3 color = (Vector3){ 1.0f, 1.0f, 1.0f };
-    SetShaderValue(solidShader, uBaseColorLoc, &color, SHADER_UNIFORM_VEC3);
-
     glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
+
+    SetShaderValue(solidShader, uBaseColorLoc, &color, SHADER_UNIFORM_VEC3);
 
     Camera3D camera = { 0 };
     camera.position = {8, 12, 8};
@@ -157,6 +159,8 @@ int main() {
     camera.projection = CAMERA_PERSPECTIVE;
 
     SetTargetFPS(144);
+
+    bool useSolid = true;
 
     while (!WindowShouldClose()) {
         float t = GetTime();
@@ -173,21 +177,34 @@ int main() {
             std::cout << verts[i + 1] << '\n';
         }
 
+        if (IsKeyPressed(KEY_F1)) {
+            useSolid = true;
+        } else if (IsKeyPressed(KEY_F2)) {
+            useSolid = false;
+        }
+
         CalcNormals(static_cast<float*>(mesh.vertices), static_cast<unsigned short*>(mesh.indices), static_cast<float*>(mesh.normals), mesh.vertexCount, mesh.triangleCount);
         UpdateMeshBuffer(mesh, 0, verts,mesh.vertexCount*3*sizeof(float), 0);   // positions
         UpdateMeshBuffer(mesh, 2, mesh.normals,mesh.vertexCount*3*sizeof(float), 0);   // normals!
 
-        SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
+        if (useSolid) {
+            SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
+            model.materials[0].shader = solidShader;
+        } else {
+            model.materials[0].shader = materialPreview;
+        }
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
         BeginMode3D(camera);
+
         DrawModel(model, {0,0,0}, 1.0f, WHITE);
         DrawModelWires(model, {0,0,0}, 1.0f, RED);
         DrawModel(cube, {5,2.f,5}, 1.f, WHITE);
         DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
         DrawText("L", 1, 2, 12, BLACK);
+
         EndMode3D();
 
         DrawFPS(10, 10);
