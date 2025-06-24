@@ -131,6 +131,8 @@ int main() {
     solidShader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(solidShader, "mvp");
     solidShader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(solidShader, "matModel");
 
+    Shader defaultsh = LoadShader(0, 0);
+
     int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
     int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
 
@@ -161,6 +163,7 @@ int main() {
     SetTargetFPS(144);
 
     bool useSolid = true;
+    bool showWires = false;
 
     while (!WindowShouldClose()) {
         float t = GetTime();
@@ -182,6 +185,9 @@ int main() {
         } else if (IsKeyPressed(KEY_F2)) {
             useSolid = false;
         }
+        if (IsKeyPressed(KEY_TAB)) {
+            showWires = !showWires;
+        }
 
         CalcNormals(static_cast<float*>(mesh.vertices), static_cast<unsigned short*>(mesh.indices), static_cast<float*>(mesh.normals), mesh.vertexCount, mesh.triangleCount);
         UpdateMeshBuffer(mesh, 0, verts,mesh.vertexCount*3*sizeof(float), 0);   // positions
@@ -191,7 +197,8 @@ int main() {
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
         } else {
-            model.materials[0].shader = materialPreview;
+            //model.materials[0].shader = materialPreview;
+            model.materials[0].shader = defaultsh;
         }
 
         BeginDrawing();
@@ -200,7 +207,7 @@ int main() {
         BeginMode3D(camera);
 
         DrawModel(model, {0,0,0}, 1.0f, WHITE);
-        DrawModelWires(model, {0,0,0}, 1.0f, RED);
+        if (showWires) DrawModelWires(model, {0,0,0}, 1.0f, RED);
         DrawModel(cube, {5,2.f,5}, 1.f, WHITE);
         DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
         DrawText("L", 1, 2, 12, BLACK);
