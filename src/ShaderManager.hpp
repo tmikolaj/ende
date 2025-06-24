@@ -1,0 +1,25 @@
+#ifndef SHADERMANAGER_HPP
+#define SHADERMANAGER_HPP
+
+#include "EngineTemplate.hpp"
+#include "raylib.h"
+
+namespace Engine {
+
+class ShaderManager : public Engine::EngineTemplate<Shader> {
+private:
+    Shader defaultShader;
+    Shader materialPreviewShader;
+    Shader solidShader;
+public:
+    ShaderManager() = default;
+    ~ShaderManager() override = default;
+
+    void init() override;
+    Shader set() override;
+    void clean() override;
+};
+
+}
+
+#endif //SHADERMANAGER_HPP
