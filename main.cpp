@@ -140,6 +140,9 @@ int main() {
     materialPreview.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(materialPreview, "matModel");
     materialPreview.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(materialPreview, "mvp");
 
+    int lightDirLoc = GetShaderLocation(materialPreview, "lightDir");
+    int baseColorLoc = GetShaderLocation(materialPreview, "baseColor");
+
     Mesh gridMesh = GenerateGridMesh(10,1.0f);
     Model model = LoadModelFromMesh(gridMesh);
     Mesh& mesh = model.meshes[0];
@@ -152,6 +155,7 @@ int main() {
     glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
 
     SetShaderValue(solidShader, uBaseColorLoc, &color, SHADER_UNIFORM_VEC3);
+    SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
 
     Camera3D camera = { 0 };
     camera.position = {8, 12, 8};
@@ -197,8 +201,9 @@ int main() {
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
         } else {
-            //model.materials[0].shader = materialPreview;
-            model.materials[0].shader = defaultsh;
+            SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
+            model.materials[0].shader = materialPreview;
+            //model.materials[0].shader = defaultsh;
         }
 
         BeginDrawing();
@@ -217,7 +222,10 @@ int main() {
         DrawFPS(10, 10);
         EndDrawing();
     }
-
+    UnloadShader(solidShader);
+    UnloadShader(defaultsh);
+    UnloadShader(materialPreview);
     UnloadModel(model);
+
     CloseWindow();
 }
