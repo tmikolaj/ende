@@ -6,7 +6,7 @@ void Engine::ShaderManager::init() {
     materialPreviewShader = LoadShader("../shaders/material_preview.vs", "../shaders/material_preview.fs");
 }
 Shader Engine::ShaderManager::set() {
-
+    return defaultShader;
 }
 void Engine::ShaderManager::clean() {
     UnloadShader(defaultShader);
