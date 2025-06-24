@@ -5,6 +5,116 @@
 #include "external/glm/glm.hpp"
 #include "external/glm/gtc/type_ptr.hpp"
 
+void CalcNormals(float vertices[], unsigned short indices[], float normals[], int vertexCount, int triangleCount);
+Mesh GenerateGridMesh(int gridSize, float tileSize);
+Matrix IdentityMatrix();
+
+int main() {
+    InitWindow(800, 600, "Grid mesh");
+
+    Shader solidShader = LoadShader("../shaders/solid.vs", "../shaders/solid.fs");
+    solidShader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(solidShader, "mvp");
+    solidShader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(solidShader, "matModel");
+
+    Shader defaultsh = LoadShader(0, 0);
+
+    int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
+    int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
+
+    Shader materialPreview = LoadShader("../shaders/material_preview.vs", "../shaders/material_preview.fs");
+    materialPreview.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(materialPreview, "matModel");
+    materialPreview.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(materialPreview, "mvp");
+
+    int lightDirLoc = GetShaderLocation(materialPreview, "lightDir");
+    int baseColorLoc = GetShaderLocation(materialPreview, "baseColor");
+
+    Mesh gridMesh = GenerateGridMesh(10,1.0f);
+    Model model = LoadModelFromMesh(gridMesh);
+    Mesh& mesh = model.meshes[0];
+
+    Model cube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
+    cube.materials[0].shader = solidShader;
+
+    model.materials[0].shader = solidShader;
+    Vector3 color = (Vector3){ 1.0f, 1.0f, 1.0f };
+    glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
+
+    SetShaderValue(solidShader, uBaseColorLoc, &color, SHADER_UNIFORM_VEC3);
+    SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
+
+    Camera3D camera = { 0 };
+    camera.position = {8, 12, 8};
+    camera.target = {5, 0, 5};
+    camera.up = {0, 10, 0};
+    camera.fovy = 45;
+    camera.projection = CAMERA_PERSPECTIVE;
+
+    SetTargetFPS(144);
+
+    bool useSolid = true;
+    bool showWires = false;
+
+    while (!WindowShouldClose()) {
+        float t = GetTime();
+        auto verts = static_cast<float*>(mesh.vertices);
+        int gridSize = 10;
+        int x = 5.0f, z = 5.0f;
+        int i = (z * (gridSize + 1) + x) * 3;
+
+        if (IsKeyDown(KEY_W)) {
+            verts[i + 1] += 0.01f;
+            std::cout << verts[i + 1] << '\n';
+        } else if (IsKeyDown(KEY_S)) {
+            verts[i + 1] -= 0.01f;
+            std::cout << verts[i + 1] << '\n';
+        }
+
+        if (IsKeyPressed(KEY_F1)) {
+            useSolid = true;
+        } else if (IsKeyPressed(KEY_F2)) {
+            useSolid = false;
+        }
+        if (IsKeyPressed(KEY_TAB)) {
+            showWires = !showWires;
+        }
+
+        CalcNormals(static_cast<float*>(mesh.vertices), static_cast<unsigned short*>(mesh.indices), static_cast<float*>(mesh.normals), mesh.vertexCount, mesh.triangleCount);
+        UpdateMeshBuffer(mesh, 0, verts,mesh.vertexCount*3*sizeof(float), 0);   // positions
+        UpdateMeshBuffer(mesh, 2, mesh.normals,mesh.vertexCount*3*sizeof(float), 0);   // normals!
+
+        if (useSolid) {
+            SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
+            model.materials[0].shader = solidShader;
+        } else {
+            //SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
+            //model.materials[0].shader = materialPreview;
+            model.materials[0].shader = defaultsh;
+        }
+
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+
+        BeginMode3D(camera);
+
+        DrawModel(model, {0,0,0}, 1.0f, BLUE);
+        if (showWires) DrawModelWires(model, {0,0,0}, 1.0f, RED);
+        DrawModel(cube, {5,2.f,5}, 1.f, WHITE);
+        DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
+        DrawText("L", 1, 2, 12, BLACK);
+
+        EndMode3D();
+
+        DrawFPS(10, 10);
+        EndDrawing();
+    }
+    UnloadShader(solidShader);
+    UnloadShader(defaultsh);
+    UnloadShader(materialPreview);
+    UnloadModel(model);
+
+    CloseWindow();
+}
+
 Mesh GenerateGridMesh(int gridSize, float tileSize) {
     int verticesPerRow = gridSize + 1;
     int vertexCount = verticesPerRow * verticesPerRow;
@@ -122,110 +232,4 @@ Matrix IdentityMatrix() {
                   0,1,0,0,
                   0,0,1,0,
                   0,0,0,1};
-}
-
-int main() {
-    InitWindow(800, 600, "Grid mesh");
-
-    Shader solidShader = LoadShader("../shaders/solid.vs", "../shaders/solid.fs");
-    solidShader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(solidShader, "mvp");
-    solidShader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(solidShader, "matModel");
-
-    Shader defaultsh = LoadShader(0, 0);
-
-    int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
-    int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
-
-    Shader materialPreview = LoadShader("../shaders/material_preview.vs", "../shaders/material_preview.fs");
-    materialPreview.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(materialPreview, "matModel");
-    materialPreview.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(materialPreview, "mvp");
-
-    int lightDirLoc = GetShaderLocation(materialPreview, "lightDir");
-    int baseColorLoc = GetShaderLocation(materialPreview, "baseColor");
-
-    Mesh gridMesh = GenerateGridMesh(10,1.0f);
-    Model model = LoadModelFromMesh(gridMesh);
-    Mesh& mesh = model.meshes[0];
-
-    Model cube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
-    cube.materials[0].shader = solidShader;
-
-    model.materials[0].shader = solidShader;
-    Vector3 color = (Vector3){ 1.0f, 1.0f, 1.0f };
-    glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
-
-    SetShaderValue(solidShader, uBaseColorLoc, &color, SHADER_UNIFORM_VEC3);
-    SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
-
-    Camera3D camera = { 0 };
-    camera.position = {8, 12, 8};
-    camera.target = {5, 0, 5};
-    camera.up = {0, 10, 0};
-    camera.fovy = 45;
-    camera.projection = CAMERA_PERSPECTIVE;
-
-    SetTargetFPS(144);
-
-    bool useSolid = true;
-    bool showWires = false;
-
-    while (!WindowShouldClose()) {
-        float t = GetTime();
-        auto verts = static_cast<float*>(mesh.vertices);
-        int gridSize = 10;
-        int x = 5.0f, z = 5.0f;
-        int i = (z * (gridSize + 1) + x) * 3;
-
-        if (IsKeyDown(KEY_W)) {
-            verts[i + 1] += 0.01f;
-            std::cout << verts[i + 1] << '\n';
-        } else if (IsKeyDown(KEY_S)) {
-            verts[i + 1] -= 0.01f;
-            std::cout << verts[i + 1] << '\n';
-        }
-
-        if (IsKeyPressed(KEY_F1)) {
-            useSolid = true;
-        } else if (IsKeyPressed(KEY_F2)) {
-            useSolid = false;
-        }
-        if (IsKeyPressed(KEY_TAB)) {
-            showWires = !showWires;
-        }
-
-        CalcNormals(static_cast<float*>(mesh.vertices), static_cast<unsigned short*>(mesh.indices), static_cast<float*>(mesh.normals), mesh.vertexCount, mesh.triangleCount);
-        UpdateMeshBuffer(mesh, 0, verts,mesh.vertexCount*3*sizeof(float), 0);   // positions
-        UpdateMeshBuffer(mesh, 2, mesh.normals,mesh.vertexCount*3*sizeof(float), 0);   // normals!
-
-        if (useSolid) {
-            SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
-            model.materials[0].shader = solidShader;
-        } else {
-            SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
-            model.materials[0].shader = materialPreview;
-            //model.materials[0].shader = defaultsh;
-        }
-
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
-
-        BeginMode3D(camera);
-
-        DrawModel(model, {0,0,0}, 1.0f, WHITE);
-        if (showWires) DrawModelWires(model, {0,0,0}, 1.0f, RED);
-        DrawModel(cube, {5,2.f,5}, 1.f, WHITE);
-        DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
-        DrawText("L", 1, 2, 12, BLACK);
-
-        EndMode3D();
-
-        DrawFPS(10, 10);
-        EndDrawing();
-    }
-    UnloadShader(solidShader);
-    UnloadShader(defaultsh);
-    UnloadShader(materialPreview);
-    UnloadModel(model);
-
-    CloseWindow();
 }
