@@ -7,7 +7,7 @@ add_subdirectory(external/raylib)
 add_subdirectory(external/glm)
 
 add_executable(3DProdGen main.cpp
-        src/State.hpp
+        src/StateTemplate.hpp
         src/Program.cpp
         src/Program.hpp
         src/ShaderManager.cpp
