@@ -21,13 +21,6 @@ int main() {
     int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
     int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
 
-    Shader materialPreview = LoadShader("../shaders/material_preview.vs", "../shaders/material_preview.fs");
-    materialPreview.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(materialPreview, "matModel");
-    materialPreview.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(materialPreview, "mvp");
-
-    int lightDirLoc = GetShaderLocation(materialPreview, "lightDir");
-    int baseColorLoc = GetShaderLocation(materialPreview, "baseColor");
-
     Mesh gridMesh = GenerateGridMesh(10,1.0f);
     Model model = LoadModelFromMesh(gridMesh);
     Mesh& mesh = model.meshes[0];
@@ -40,7 +33,6 @@ int main() {
     glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
 
     SetShaderValue(solidShader, uBaseColorLoc, &color, SHADER_UNIFORM_VEC3);
-    SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
 
     Camera3D camera = { 0 };
     camera.position = {8, 12, 8};
@@ -49,12 +41,28 @@ int main() {
     camera.fovy = 45;
     camera.projection = CAMERA_PERSPECTIVE;
 
+    Ray ray = { 0 }; // ray line
+    RayCollision collision = { 0 }; // for picking the hit info
+
     SetTargetFPS(144);
 
     bool useSolid = true;
     bool showWires = false;
 
     while (!WindowShouldClose()) {
+        if (IsCursorHidden()) {
+            UpdateCamera(&camera, CAMERA_FIRST_PERSON);
+        }
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if (!collision.hit) {
+                ray = GetScreenToWorldRay(GetMousePosition(), camera);
+
+                collision = GetRayCollisionBox(ray, (BoundingBox){(Vector3){ 0, 0, 0 }, (Vector3){10, 0, 10}});
+            } else {
+                collision.hit = false;
+            }
+        }
+
         float t = GetTime();
         auto verts = static_cast<float*>(mesh.vertices);
         int gridSize = 10;
@@ -79,15 +87,15 @@ int main() {
         }
 
         CalcNormals(static_cast<float*>(mesh.vertices), static_cast<unsigned short*>(mesh.indices), static_cast<float*>(mesh.normals), mesh.vertexCount, mesh.triangleCount);
-        UpdateMeshBuffer(mesh, 0, verts,mesh.vertexCount*3*sizeof(float), 0);   // positions
-        UpdateMeshBuffer(mesh, 2, mesh.normals,mesh.vertexCount*3*sizeof(float), 0);   // normals!
+        UpdateMeshBuffer(mesh, 0, verts,mesh.vertexCount*3*sizeof(float), 0);
+        UpdateMeshBuffer(mesh, 2, mesh.normals,mesh.vertexCount*3*sizeof(float), 0);
+        UpdateMeshBuffer(mesh, 3, mesh.colors, mesh.vertexCount*sizeof(Color), 0);
+
 
         if (useSolid) {
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
         } else {
-            //SetShaderValue(materialPreview, baseColorLoc, &color, SHADER_UNIFORM_VEC3);
-            //model.materials[0].shader = materialPreview;
             model.materials[0].shader = defaultsh;
         }
 
@@ -96,20 +104,27 @@ int main() {
 
         BeginMode3D(camera);
 
-        DrawModel(model, {0,0,0}, 1.0f, BLUE);
-        if (showWires) DrawModelWires(model, {0,0,0}, 1.0f, RED);
-        DrawModel(cube, {5,2.f,5}, 1.f, WHITE);
+        if (collision.hit) {
+            DrawModel(model, {0,0,0}, 1.0f, RED);
+            if (!useSolid) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, GREEN);
+        } else {
+            DrawModel(model, {0,0,0}, 1.0f, BLUE);
+            if (showWires) DrawModelWires(model, {0,0,0}, 1.0f, RED);
+        }
+        DrawModel(cube, {5,2.f,5}, 1.f, BLUE);
         DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
         DrawText("L", 1, 2, 12, BLACK);
 
         EndMode3D();
 
         DrawFPS(10, 10);
+        std::string mode = useSolid ? "Solid" : "MaterialPreview";
+        std::string text = "Current mode: " + mode;
+        DrawText(text.c_str(), 100, 10, 20, BLACK);
         EndDrawing();
     }
     UnloadShader(solidShader);
     UnloadShader(defaultsh);
-    UnloadShader(materialPreview);
     UnloadModel(model);
 
     CloseWindow();
