@@ -13,7 +13,9 @@ add_executable(3DProdGen main.cpp
         src/ShaderManager.cpp
         src/ShaderManager.hpp
         src/MainMenu.cpp
-        src/MainMenu.hpp)
+        src/MainMenu.hpp
+        src/StateManager.cpp
+        src/StateManager.hpp)
 
 target_link_libraries(3DProdGen raylib)
 target_link_libraries(3DProdGen glm)
