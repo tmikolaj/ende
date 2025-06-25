@@ -1,9 +1,17 @@
 #include <iostream>
-#include "external/raylib/src/raylib.h"
-#include "external/raylib/src/rlgl.h"
-#include "external/raylib/src/raymath.h"
+#include "raylib.h"
+#include "rlgl.h"
+#include "raymath.h"
+#define RLIGHTS_IMPLEMENTATION
+#include "rlights.h"
 #include "external/glm/glm.hpp"
 #include "external/glm/gtc/type_ptr.hpp"
+
+enum currentViewMode {
+    SOLID = 0,
+    DEFAULT = 1,
+    M_PREVIEW = 2
+};
 
 void CalcNormals(float vertices[], unsigned short indices[], float normals[], int vertexCount, int triangleCount);
 Mesh GenerateGridMesh(int gridSize, float tileSize);
@@ -13,13 +21,20 @@ int main() {
     InitWindow(800, 600, "Grid mesh");
 
     Shader solidShader = LoadShader("../shaders/solid.vs", "../shaders/solid.fs");
-    solidShader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(solidShader, "mvp");
-    solidShader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(solidShader, "matModel");
-
-    Shader defaultsh = LoadShader(0, 0);
 
     int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
     int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
+
+    Shader defaultsh = LoadShader(0, 0);
+
+    Shader materialPreview = LoadShader(TextFormat("../shaders/raylibshaders/lighting.vs"), TextFormat("../shaders/raylibshaders/lighting.fs"));
+    // TODO: add validation check for shaders loading in Engine::ShaderManager
+
+    materialPreview.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(materialPreview, "viewPos");
+
+    Light lights[1] = { 0 };
+    lights[0] = CreateLight(LIGHT_DIRECTIONAL, (Vector3){ -2, 1, -2}, Vector3Zero(), WHITE, materialPreview);
+    lights[0].enabled = true;
 
     Mesh gridMesh = GenerateGridMesh(10,1.0f);
     Model model = LoadModelFromMesh(gridMesh);
@@ -46,8 +61,9 @@ int main() {
 
     SetTargetFPS(144);
 
-    bool useSolid = true;
+    std::string curr_m = "SOLID";
     bool showWires = false;
+    int mode = SOLID;
 
     while (!WindowShouldClose()) {
         if (IsCursorHidden()) {
@@ -78,9 +94,14 @@ int main() {
         }
 
         if (IsKeyPressed(KEY_F1)) {
-            useSolid = true;
+            mode = SOLID;
+            curr_m = "SOLID";
         } else if (IsKeyPressed(KEY_F2)) {
-            useSolid = false;
+            mode = DEFAULT;
+            curr_m = "DEFAULT";
+        } else if (IsKeyPressed(KEY_F3)) {
+            mode = M_PREVIEW;
+            curr_m = "MATERIAL PREVIEW";
         }
         if (IsKeyPressed(KEY_TAB)) {
             showWires = !showWires;
@@ -92,11 +113,19 @@ int main() {
         UpdateMeshBuffer(mesh, 3, mesh.colors, mesh.vertexCount*sizeof(Color), 0);
 
 
-        if (useSolid) {
+        if (mode == SOLID) {
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
-        } else {
+            cube.materials[0].shader = solidShader;
+        } else if (mode == DEFAULT) {
             model.materials[0].shader = defaultsh;
+            cube.materials[0].shader = defaultsh;
+        } else {
+            float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
+            SetShaderValue(materialPreview, materialPreview.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
+            UpdateLightValues(materialPreview, lights[0]);
+            model.materials[0].shader = materialPreview;
+            cube.materials[0].shader = materialPreview;
         }
 
         BeginDrawing();
@@ -106,7 +135,7 @@ int main() {
 
         if (collision.hit) {
             DrawModel(model, {0,0,0}, 1.0f, RED);
-            if (!useSolid) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, GREEN);
+            if (mode != SOLID) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, GREEN);
         } else {
             DrawModel(model, {0,0,0}, 1.0f, BLUE);
             if (showWires) DrawModelWires(model, {0,0,0}, 1.0f, RED);
@@ -118,14 +147,16 @@ int main() {
         EndMode3D();
 
         DrawFPS(10, 10);
-        std::string mode = useSolid ? "Solid" : "MaterialPreview";
-        std::string text = "Current mode: " + mode;
+
+        std::string text = "Current mode: " + curr_m;
         DrawText(text.c_str(), 100, 10, 20, BLACK);
         EndDrawing();
     }
     UnloadShader(solidShader);
+    UnloadShader(materialPreview);
     UnloadShader(defaultsh);
     UnloadModel(model);
+    UnloadModel(cube);
 
     CloseWindow();
 }
