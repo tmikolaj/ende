@@ -18,6 +18,7 @@ void Engine::StateManager::popCurrent() {
 void Engine::StateManager::processState() {
 
     if (m_remove && (!stateStack.empty())) {
+        getCurrentState()->clean();
         stateStack.pop();
         m_remove = false;
     }
