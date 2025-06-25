@@ -1,14 +1,21 @@
 #include "Program.hpp"
-#include "raylib.h"
 
+Program::Program() :
+context(std::make_shared<Context>()) {
+    context->states->add(std::make_unique<MainMenu>());
+}
 void Program::init() {
     InitWindow(GetMonitorWidth(GetCurrentMonitor()), GetMonitorHeight(GetCurrentMonitor()), "3DProdGen");
     shmgr.init();
-    // TODO: init MainMenu state
+    context->states->processState();
+    context->states->getCurrentState()->init();
 }
 void Program::run() {
     while (!WindowShouldClose()) {
-        // TODO: call methods from currentState
+        // TODO: get the shader before draw is called
+        context->states->processState();
+        context->states->getCurrentState()->process();
+        // context->states->getCurrentState()->draw();
     }
     CloseWindow();
 }
