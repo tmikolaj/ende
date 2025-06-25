@@ -1,12 +1,12 @@
 #ifndef SHADERMANAGER_HPP
 #define SHADERMANAGER_HPP
 
-#include "EngineTemplate.hpp"
+#include "bEngineComponent.hpp"
 #include "raylib.h"
 
 namespace Engine {
 
-class ShaderManager : public Engine::EngineTemplate<Shader> {
+class ShaderManager : public Engine::bEngineComponent<Shader> {
 private:
     Shader defaultShader;
     Shader materialPreviewShader;
@@ -16,7 +16,7 @@ public:
     ~ShaderManager() override = default;
 
     void init() override;
-    Shader set() override;
+    Shader set(const Shader& prev) override;
     void clean() override;
 };
 
