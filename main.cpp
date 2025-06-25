@@ -10,7 +10,8 @@
 enum currentViewMode {
     SOLID = 0,
     DEFAULT = 1,
-    M_PREVIEW = 2
+    M_PREVIEW = 2,
+    WIREFRAME = 3
 };
 
 void CalcNormals(float vertices[], unsigned short indices[], float normals[], int vertexCount, int triangleCount);
@@ -102,6 +103,9 @@ int main() {
         } else if (IsKeyPressed(KEY_F3)) {
             mode = M_PREVIEW;
             curr_m = "MATERIAL PREVIEW";
+        } else if (IsKeyPressed(KEY_F4)) {
+            mode = WIREFRAME;
+            curr_m = "WIREFRAME";
         }
         if (IsKeyPressed(KEY_TAB)) {
             showWires = !showWires;
@@ -117,7 +121,7 @@ int main() {
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
             cube.materials[0].shader = solidShader;
-        } else if (mode == DEFAULT) {
+        } else if (mode == DEFAULT || mode == WIREFRAME) {
             model.materials[0].shader = defaultsh;
             cube.materials[0].shader = defaultsh;
         } else {
@@ -134,13 +138,13 @@ int main() {
         BeginMode3D(camera);
 
         if (collision.hit) {
-            DrawModel(model, {0,0,0}, 1.0f, RED);
+            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, RED);
             if (mode != SOLID) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, GREEN);
         } else {
-            DrawModel(model, {0,0,0}, 1.0f, BLUE);
-            if (showWires) DrawModelWires(model, {0,0,0}, 1.0f, RED);
+            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, BLUE);
+            if (showWires || mode == WIREFRAME) DrawModelWires(model, {0,0,0}, 1.0f, RED);
         }
-        DrawModel(cube, {5,2.f,5}, 1.f, BLUE);
+        if (mode != WIREFRAME) DrawModel(cube, {5,2.f,5}, 1.f, BLUE);
         DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
         DrawText("L", 1, 2, 12, BLACK);
 
