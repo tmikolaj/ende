@@ -4,7 +4,7 @@
 void Program::init() {
     InitWindow(GetMonitorWidth(GetCurrentMonitor()), GetMonitorHeight(GetCurrentMonitor()), "3DProdGen");
     shmgr.init();
-    // TODO: init current state
+    // TODO: init MainMenu state
 }
 void Program::run() {
     while (!WindowShouldClose()) {
