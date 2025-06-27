@@ -6,19 +6,36 @@ set(CMAKE_CXX_STANDARD 20)
 add_subdirectory(external/raylib)
 add_subdirectory(external/glm)
 
-add_executable(3DProdGen main.cpp
-        src/bStateTemplate.hpp
-        src/Program.cpp
-        src/Program.hpp
-        src/ShaderManager.cpp
-        src/ShaderManager.hpp
-        src/MainMenu.cpp
-        src/MainMenu.hpp
-        src/StateManager.cpp
-        src/StateManager.hpp)
+set(IMGUI_SRC
+        external/imgui/imgui.cpp
+        external/imgui/imgui_draw.cpp
+        external/imgui/imgui_tables.cpp
+        external/imgui/imgui_widgets.cpp
+)
+add_library(imgui STATIC ${IMGUI_SRC})
+target_include_directories(imgui PUBLIC external/imgui)
 
-target_link_libraries(3DProdGen raylib)
-target_link_libraries(3DProdGen glm)
+add_library(rlImGui external/rlImGui/rlImGui.cpp)
+target_include_directories(rlImGui PUBLIC
+        external/rlImGui
+        ${PROJECT_SOURCE_DIR}/external/imgui
+        ${PROJECT_SOURCE_DIR}/external/raylib/src
+)
+target_link_libraries(rlImGui PUBLIC imgui raylib)
+
+add_executable(3DProdGen
+        main.cpp
+        src/Program.cpp
+        src/ShaderManager.cpp
+        src/MainMenu.cpp
+        src/StateManager.cpp
+)
+
+target_link_libraries(3DProdGen
+        raylib
+        glm
+        rlImGui
+)
 
 if(UNIX)
     target_link_libraries(3DProdGen m pthread dl X11 Xrandr Xi Xxf86vm Xinerama Xcursor GL)
