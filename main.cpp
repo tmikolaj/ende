@@ -9,8 +9,8 @@
 
 enum currentViewMode {
     SOLID = 0,
-    DEFAULT = 1,
-    M_PREVIEW = 2,
+    M_PREVIEW = 1,
+    RENDER = 2,
     WIREFRAME = 3
 };
 
@@ -98,11 +98,11 @@ int main() {
             mode = SOLID;
             curr_m = "SOLID";
         } else if (IsKeyPressed(KEY_F2)) {
-            mode = DEFAULT;
-            curr_m = "DEFAULT";
-        } else if (IsKeyPressed(KEY_F3)) {
             mode = M_PREVIEW;
             curr_m = "MATERIAL PREVIEW";
+        } else if (IsKeyPressed(KEY_F3)) {
+            mode = RENDER;
+            curr_m = "RENDER";
         } else if (IsKeyPressed(KEY_F4)) {
             mode = WIREFRAME;
             curr_m = "WIREFRAME";
@@ -121,7 +121,7 @@ int main() {
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
             cube.materials[0].shader = solidShader;
-        } else if (mode == DEFAULT || mode == WIREFRAME) {
+        } else if (mode == M_PREVIEW || mode == WIREFRAME) {
             model.materials[0].shader = defaultsh;
             cube.materials[0].shader = defaultsh;
         } else {
