@@ -8,8 +8,8 @@ namespace Engine {
 
 class ShaderManager : public Engine::bEngineComponent<Shader> {
 private:
-    Shader defaultShader;
     Shader materialPreviewShader;
+    Shader renderShader;
     Shader solidShader;
 public:
     ShaderManager() = default;
