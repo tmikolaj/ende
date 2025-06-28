@@ -60,10 +60,11 @@ int main() {
     cube.materials[0].shader = solidShader;
 
     model.materials[0].shader = solidShader;
-    Vector3 color = (Vector3){ 1.0f, 1.0f, 1.0f };
+    float lightColor[3] = { 1.0f, 1.0f, 1.0f };
     glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
+    float lightDirection[3] = { lightDir.x, lightDir.y, lightDir.z };
 
-    SetShaderValue(solidShader, uBaseColorLoc, &color, SHADER_UNIFORM_VEC3);
+    SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
 
     Camera3D camera = { 0 };
     camera.position = {8, 12, 8};
@@ -137,6 +138,7 @@ int main() {
         //UpdateMeshBuffer(mesh, 3, customColors.data(), customColors.size() * sizeof(unsigned char), 0);
 
         if (mode == SOLID) {
+            SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
             cube.materials[0].shader = solidShader;
@@ -180,15 +182,23 @@ int main() {
         ImGui::SetNextWindowSize(ImVec2(300, 1080), ImGuiCond_Once);
 
         ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-        ImGui::Text("Procedural controls!");
+        ImGui::Text("Procedural Controls!");
         ImGui::Checkbox("Show Wires", &showWires);
         if (selected) {
             ImGui::Separator();
-            ImGui::Text("Selected mesh");
+            ImGui::Text("Selected Mesh");
             ImGui::ColorEdit3("Mesh color", (float*)&meshColor);
             ImGui::SliderInt("Grid size", &uiGridSize, 1, 100);
             ImGui::SliderFloat("Tile size", &uiTileSize, 0.1f, 10.0f);
         }
+        ImGui::Separator();
+        if (ImGui::CollapsingHeader("Solid Shader Advanced Settings", ImGuiTreeNodeFlags_None)) {
+            ImGui::SliderFloat3("Light direction", lightDirection, -1.0f, 1.0f);
+            glm::vec3 newDir = glm::vec3(lightDirection[0], lightDirection[1], lightDirection[2]);
+            lightDir = glm::normalize(newDir);
+            ImGui::ColorEdit3("Light color", lightColor);
+        }
+
         ImGui::End();
 
         rlImGuiEnd();
