@@ -21,6 +21,7 @@ enum currentViewMode {
     WIREFRAME = 3
 };
 
+Color ImVecToColor(ImVec4 toConvert);
 void CalcNormals(float vertices[], unsigned short indices[], float normals[], int vertexCount, int triangleCount);
 Mesh GenerateGridMesh(int gridSize, float tileSize);
 Matrix IdentityMatrix();
@@ -87,6 +88,8 @@ int main() {
     float uiTileSize = 1.0f;
     int prevGridSize = uiGridSize;
     float prevTileSize = uiTileSize;
+
+    ImVec4 meshColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     while (!WindowShouldClose()) {
         if (IsCursorHidden()) {
@@ -157,7 +160,7 @@ int main() {
             if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, RED);
             if (mode != SOLID) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, GREEN);
         } else {
-            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, BLUE);
+            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, ImVecToColor(meshColor));
             if (showWires || mode == WIREFRAME) DrawModelWires(model, {0,0,0}, 1.0f, RED);
         }
         if (mode != WIREFRAME) DrawModel(cube, {5,2.f,5}, 1.f, BLUE);
@@ -182,6 +185,7 @@ int main() {
         if (selected) {
             ImGui::Separator();
             ImGui::Text("Selected mesh");
+            ImGui::ColorEdit3("Mesh color", (float*)&meshColor);
             ImGui::SliderInt("Grid size", &uiGridSize, 1, 100);
             ImGui::SliderFloat("Tile size", &uiTileSize, 0.1f, 10.0f);
         }
@@ -219,6 +223,15 @@ int main() {
 
     rlImGuiShutdown();
     CloseWindow();
+}
+
+Color ImVecToColor(ImVec4 toConvert) {
+    return (Color){
+        static_cast<unsigned char>(toConvert.x * 255.0f),
+        static_cast<unsigned char>(toConvert.y * 255.0f),
+        static_cast<unsigned char>(toConvert.z * 255.0f),
+        255
+    };
 }
 
 Mesh GenerateGridMesh(int gridSize, float tileSize) {
