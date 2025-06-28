@@ -5,7 +5,7 @@
 #include "bEngineComponent.hpp"
 #include "ShaderManager.hpp"
 #include "StateManager.hpp"
-#include "MainMenu.hpp"
+#include "StartMenu.hpp"
 #include "Entity.hpp"
 
 struct Context {
@@ -23,6 +23,7 @@ class Program {
 private:
     std::shared_ptr<Context> context;
     Engine::ShaderManager shmgr;
+    Shader shader;
 public:
     Program();
     ~Program() = default;
