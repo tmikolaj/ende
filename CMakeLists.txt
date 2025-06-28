@@ -27,7 +27,7 @@ add_executable(3DProdGen
         main.cpp
         src/Program.cpp
         src/ShaderManager.cpp
-        src/MainMenu.cpp
+        src/StartMenu.cpp
         src/StateManager.cpp
 )
 
