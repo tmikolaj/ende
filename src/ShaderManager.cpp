@@ -5,7 +5,7 @@ void Engine::ShaderManager::init() {
     solidShader = LoadShader("../shaders/solid.vs", "../shaders/solid.fs");
     renderShader = LoadShader("../shaders/raylibshaders/lighting.vs", "../shaders/raylibshaders/lighting.fs");
 
-    if (!IsShaderValid(renderShader) || !IsShaderValid(materialPreviewShader) || IsShaderValid(solidShader)) {
+    if (!IsShaderValid(renderShader) || !IsShaderValid(materialPreviewShader) || !IsShaderValid(solidShader)) {
         throw std::runtime_error("ShaderManager::Engine::ShaderManager::init: Failed to load shader!");
     }
 }
