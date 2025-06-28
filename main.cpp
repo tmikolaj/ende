@@ -1,11 +1,18 @@
 #include <iostream>
+#include <vector>
 #include "raylib.h"
 #include "rlgl.h"
 #include "raymath.h"
 #define RLIGHTS_IMPLEMENTATION
 #include "rlights.h"
+#include "external/imgui/imgui.h"
+#include "external/rlImGui/rlImGui.h"
 #include "external/glm/glm.hpp"
 #include "external/glm/gtc/type_ptr.hpp"
+
+std::vector<float> customVerts;
+std::vector<float> customNormals;
+std::vector<unsigned short> customIndices;
 
 enum currentViewMode {
     SOLID = 0,
@@ -19,27 +26,34 @@ Mesh GenerateGridMesh(int gridSize, float tileSize);
 Matrix IdentityMatrix();
 
 int main() {
-    InitWindow(800, 600, "Grid mesh");
+    InitWindow(1920, 1080, "Grid mesh");
+    rlImGuiSetup(true);
 
     Shader solidShader = LoadShader("../shaders/solid.vs", "../shaders/solid.fs");
 
     int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
     int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
 
-    Shader defaultsh = LoadShader(0, 0);
+    Shader materialPreviewsh = LoadShader(0, 0);
 
-    Shader materialPreview = LoadShader(TextFormat("../shaders/raylibshaders/lighting.vs"), TextFormat("../shaders/raylibshaders/lighting.fs"));
-    // TODO: add validation check for shaders loading in Engine::ShaderManager
+    Shader rendersh = LoadShader(TextFormat("../shaders/raylibshaders/lighting.vs"), TextFormat("../shaders/raylibshaders/lighting.fs"));
 
-    materialPreview.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(materialPreview, "viewPos");
+    rendersh.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(rendersh, "viewPos");
 
     Light lights[1] = { 0 };
-    lights[0] = CreateLight(LIGHT_DIRECTIONAL, (Vector3){ -2, 1, -2}, Vector3Zero(), WHITE, materialPreview);
+    lights[0] = CreateLight(LIGHT_DIRECTIONAL, (Vector3){ -2, 1, -2}, Vector3Zero(), WHITE, rendersh);
     lights[0].enabled = true;
 
     Mesh gridMesh = GenerateGridMesh(10,1.0f);
+    auto rawVerts = static_cast<float*>(gridMesh.vertices);
+    customVerts.assign(rawVerts, rawVerts + gridMesh.vertexCount * 3);
+    auto rawNormals = static_cast<float*>(gridMesh.normals);
+    customNormals.assign(rawNormals, rawNormals + gridMesh.vertexCount * 3);
+    auto rawIndices = static_cast<unsigned short*>(gridMesh.indices);
+    customIndices.assign(rawIndices, rawIndices + gridMesh.triangleCount * 3);
+
     Model model = LoadModelFromMesh(gridMesh);
-    Mesh& mesh = model.meshes[0];
+    Mesh* mesh = &model.meshes[0];
 
     Model cube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
     cube.materials[0].shader = solidShader;
@@ -66,32 +80,35 @@ int main() {
     bool showWires = false;
     int mode = SOLID;
 
+    bool selected = false; // for dealing with ui and 3d model selection
+
+    // for imgui (to change the values of these variables)
+    int uiGridSize = 10;
+    float uiTileSize = 1.0f;
+    int prevGridSize = uiGridSize;
+    float prevTileSize = uiTileSize;
+
     while (!WindowShouldClose()) {
         if (IsCursorHidden()) {
             UpdateCamera(&camera, CAMERA_FIRST_PERSON);
         }
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            if (!collision.hit) {
-                ray = GetScreenToWorldRay(GetMousePosition(), camera);
+        if (!ImGui::GetIO().WantCaptureMouse && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            ray = GetScreenToWorldRay(GetMousePosition(), camera);
+            collision = GetRayCollisionBox(ray, (BoundingBox){(Vector3){ 0, 0, 0 }, (Vector3){10, 0, 10}});
 
-                collision = GetRayCollisionBox(ray, (BoundingBox){(Vector3){ 0, 0, 0 }, (Vector3){10, 0, 10}});
-            } else {
-                collision.hit = false;
-            }
+            selected = collision.hit;
         }
 
-        float t = GetTime();
-        auto verts = static_cast<float*>(mesh.vertices);
-        int gridSize = 10;
-        int x = 5.0f, z = 5.0f;
-        int i = (z * (gridSize + 1) + x) * 3;
+        int x = uiGridSize / 2;
+        int z = uiGridSize / 2;
+        int i = (z * (uiGridSize + 1) + x) * 3;
 
         if (IsKeyDown(KEY_W)) {
-            verts[i + 1] += 0.01f;
-            std::cout << verts[i + 1] << '\n';
+            customVerts[i + 1] += 0.01f;
+            std::cout << customVerts[i + 1] << '\n';
         } else if (IsKeyDown(KEY_S)) {
-            verts[i + 1] -= 0.01f;
-            std::cout << verts[i + 1] << '\n';
+            customVerts[i + 1] -= 0.01f;
+            std::cout << customVerts[i + 1] << '\n';
         }
 
         if (IsKeyPressed(KEY_F1)) {
@@ -111,25 +128,24 @@ int main() {
             showWires = !showWires;
         }
 
-        CalcNormals(static_cast<float*>(mesh.vertices), static_cast<unsigned short*>(mesh.indices), static_cast<float*>(mesh.normals), mesh.vertexCount, mesh.triangleCount);
-        UpdateMeshBuffer(mesh, 0, verts,mesh.vertexCount*3*sizeof(float), 0);
-        UpdateMeshBuffer(mesh, 2, mesh.normals,mesh.vertexCount*3*sizeof(float), 0);
-        UpdateMeshBuffer(mesh, 3, mesh.colors, mesh.vertexCount*sizeof(Color), 0);
-
+        CalcNormals(customVerts.data(), static_cast<unsigned short*>(mesh->indices), customNormals.data(), mesh->vertexCount, mesh->triangleCount);
+        UpdateMeshBuffer(*mesh, 0, customVerts.data(), customVerts.size() * sizeof(float), 0);
+        UpdateMeshBuffer(*mesh, 2, customNormals.data(), customNormals.size() * sizeof(float), 0);
+        //UpdateMeshBuffer(mesh, 3, customColors.data(), customColors.size() * sizeof(unsigned char), 0);
 
         if (mode == SOLID) {
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             model.materials[0].shader = solidShader;
             cube.materials[0].shader = solidShader;
         } else if (mode == M_PREVIEW || mode == WIREFRAME) {
-            model.materials[0].shader = defaultsh;
-            cube.materials[0].shader = defaultsh;
+            model.materials[0].shader = materialPreviewsh;
+            cube.materials[0].shader = materialPreviewsh;
         } else {
             float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
-            SetShaderValue(materialPreview, materialPreview.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-            UpdateLightValues(materialPreview, lights[0]);
-            model.materials[0].shader = materialPreview;
-            cube.materials[0].shader = materialPreview;
+            SetShaderValue(rendersh, rendersh.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
+            UpdateLightValues(rendersh, lights[0]);
+            model.materials[0].shader = rendersh;
+            cube.materials[0].shader = rendersh;
         }
 
         BeginDrawing();
@@ -154,14 +170,54 @@ int main() {
 
         std::string text = "Current mode: " + curr_m;
         DrawText(text.c_str(), 100, 10, 20, BLACK);
+
+        rlImGuiBegin();
+
+        ImGui::SetNextWindowPos(ImVec2(1680, 0), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(300, 1080), ImGuiCond_Once);
+
+        ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+        ImGui::Text("Procedural controls!");
+        ImGui::Checkbox("Show Wires", &showWires);
+        if (selected) {
+            ImGui::Separator();
+            ImGui::Text("Selected mesh");
+            ImGui::SliderInt("Grid size", &uiGridSize, 1, 100);
+            ImGui::SliderFloat("Tile size", &uiTileSize, 0.1f, 10.0f);
+        }
+        ImGui::End();
+
+        rlImGuiEnd();
+
+        if (uiGridSize != prevGridSize || uiTileSize != prevTileSize) {
+            prevGridSize = uiGridSize;
+            prevTileSize = uiTileSize;
+
+            UnloadModel(model);
+
+            Mesh newMesh = GenerateGridMesh(uiGridSize, uiTileSize);
+            model = LoadModelFromMesh(newMesh);
+            model.materials[0].shader = solidShader;
+
+            // Update customVerts and customNormals from new mesh
+            auto rawV = static_cast<float*>(model.meshes[0].vertices);
+            customVerts.assign(rawV, rawV + model.meshes[0].vertexCount * 3);
+            auto rawN = static_cast<float*>(model.meshes[0].normals);
+            customNormals.assign(rawN, rawN + model.meshes[0].vertexCount * 3);
+            auto rawI = static_cast<unsigned short*>(model.meshes[0].indices);
+            customIndices.assign(rawI, rawI + model.meshes[0].triangleCount * 3);
+
+            mesh = &model.meshes[0];
+        }
+
         EndDrawing();
     }
     UnloadShader(solidShader);
-    UnloadShader(materialPreview);
-    UnloadShader(defaultsh);
+    UnloadShader(rendersh);
     UnloadModel(model);
     UnloadModel(cube);
 
+    rlImGuiShutdown();
     CloseWindow();
 }
 
