@@ -35,7 +35,7 @@ int main() {
     int uLightDirLoc = GetShaderLocation(solidShader, "lightDir");
     int uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
 
-    Shader materialPreviewsh = LoadShader(0, 0);
+    Shader materialPreviewsh = LoadShader(nullptr, nullptr);
 
     Shader rendersh = LoadShader(TextFormat("../shaders/raylibshaders/lighting.vs"), TextFormat("../shaders/raylibshaders/lighting.fs"));
 

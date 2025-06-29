@@ -1,7 +1,7 @@
 #include "ShaderManager.hpp"
 
 void Engine::ShaderManager::init() {
-    materialPreviewShader = LoadShader(0, 0);
+    materialPreviewShader = LoadShader(nullptr, nullptr);
     solidShader = LoadShader("../shaders/solid.vs", "../shaders/solid.fs");
     renderShader = LoadShader("../shaders/raylibshaders/lighting.vs", "../shaders/raylibshaders/lighting.fs");
 
