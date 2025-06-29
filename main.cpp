@@ -89,8 +89,12 @@ int main() {
     float uiTileSize = 1.0f;
     int prevGridSize = uiGridSize;
     float prevTileSize = uiTileSize;
+    int selectedX = uiGridSize / 2;
+    int selectedZ = uiGridSize / 2;
 
     ImVec4 meshColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    ImVec4 onSelectionMeshColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+    ImVec4 onSelectionWiresColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 
     while (!WindowShouldClose()) {
         if (IsCursorHidden()) {
@@ -159,8 +163,8 @@ int main() {
         BeginMode3D(camera);
 
         if (collision.hit) {
-            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, RED);
-            if (mode != SOLID) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, GREEN);
+            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, ImVecToColor(onSelectionMeshColor));
+            if (mode != SOLID) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, ImVecToColor(onSelectionWiresColor));
         } else {
             if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, ImVecToColor(meshColor));
             if (showWires || mode == WIREFRAME) DrawModelWires(model, {0,0,0}, 1.0f, RED);
@@ -190,6 +194,16 @@ int main() {
             ImGui::ColorEdit3("Mesh color", (float*)&meshColor);
             ImGui::SliderInt("Grid size", &uiGridSize, 1, 100);
             ImGui::SliderFloat("Tile size", &uiTileSize, 0.1f, 10.0f);
+
+            ImGui::Separator();
+            ImGui::Text("Vertex Selector");
+            ImGui::SliderInt("X Index", &selectedX, 0, uiGridSize);
+            ImGui::SliderInt("Y Index", &selectedZ, 0, uiGridSize);
+
+            int index = (selectedZ * (uiGridSize + 1) + selectedX) * 3;
+            float& vertexY = customVerts[index + 1];
+
+            ImGui::SliderFloat("Vertex Y", &vertexY, -5.0f, 5.0f);
         }
         ImGui::Separator();
         if (ImGui::CollapsingHeader("Solid Shader Advanced Settings", ImGuiTreeNodeFlags_None)) {
@@ -197,6 +211,10 @@ int main() {
             glm::vec3 newDir = glm::vec3(lightDirection[0], lightDirection[1], lightDirection[2]);
             lightDir = glm::normalize(newDir);
             ImGui::ColorEdit3("Light color", lightColor);
+        }
+        if (ImGui::CollapsingHeader("Selection Color Settings", ImGuiTreeNodeFlags_None)) {
+            ImGui::ColorEdit3("On Selected Mesh", (float*)&onSelectionMeshColor);
+            ImGui::ColorEdit3("On Selected Wires", (float*)&onSelectionWiresColor);
         }
 
         ImGui::End();
