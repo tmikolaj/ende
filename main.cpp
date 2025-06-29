@@ -73,6 +73,10 @@ int main() {
     camera.fovy = 45;
     camera.projection = CAMERA_PERSPECTIVE;
 
+    Vector3 target = { 0, 0, 0 };
+    float distance = 10.0f;
+    float zoomSpeed = 1.0f;
+
     Ray ray = { 0 }; // ray line
     RayCollision collision = { 0 }; // for picking the hit info
 
@@ -100,10 +104,21 @@ int main() {
 
     float chunkSize = 2.5f;
 
+    bool isCursorHidden = false;
+
     while (!WindowShouldClose()) {
-        if (IsCursorHidden()) {
-            UpdateCamera(&camera, CAMERA_FIRST_PERSON);
-        }
+        distance -= GetMouseWheelMove() * zoomSpeed;
+        distance = Clamp(distance, 2.0f, 50.0f);
+
+        Vector3 cameraPos = {
+            target.x + distance,
+            target.y + distance,
+            target.z + distance
+        };
+        camera.position = cameraPos;
+        camera.target = target;
+        camera.up = { 0.0f, 1.0f, 0.0f };
+
         if (!ImGui::GetIO().WantCaptureMouse && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             ray = GetScreenToWorldRay(GetMousePosition(), camera);
             collision = GetRayCollisionBox(ray, (BoundingBox){(Vector3){ 0, 0, 0 }, (Vector3){10, 0, 10}});
@@ -135,9 +150,6 @@ int main() {
         } else if (IsKeyPressed(KEY_F4)) {
             mode = WIREFRAME;
             curr_m = "WIREFRAME";
-        }
-        if (IsKeyPressed(KEY_TAB)) {
-            showWires = !showWires;
         }
 
         CalcNormals(customVerts.data(), static_cast<unsigned short*>(mesh->indices), customNormals.data(), mesh->vertexCount, mesh->triangleCount);
@@ -237,6 +249,12 @@ int main() {
         if (ImGui::CollapsingHeader("Selection Color Settings", ImGuiTreeNodeFlags_None)) {
             ImGui::ColorEdit3("On Selected Mesh", (float*)&onSelectionMeshColor);
             ImGui::ColorEdit3("On Selected Wires", (float*)&onSelectionWiresColor);
+        }
+        if (ImGui::CollapsingHeader("General settings")) {
+            if (ImGui::CollapsingHeader("Camera")) {
+                ImGui::InputFloat("Scroll speed", &zoomSpeed);
+                ImGui::InputFloat("FOV", &camera.fovy, 0.0f, 90.0f);
+            }
         }
 
         ImGui::End();
