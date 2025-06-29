@@ -98,6 +98,8 @@ int main() {
 
     float position[3] = { 0, 0, 0 };
 
+    float chunkSize = 2.5f;
+
     while (!WindowShouldClose()) {
         if (IsCursorHidden()) {
             UpdateCamera(&camera, CAMERA_FIRST_PERSON);
@@ -175,6 +177,7 @@ int main() {
         DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
         DrawText("L", 1, 2, 12, BLACK);
 
+        DrawGrid(100, chunkSize);
         EndMode3D();
 
         DrawFPS(10, 10);
@@ -184,11 +187,12 @@ int main() {
 
         rlImGuiBegin();
 
-        ImGui::SetNextWindowPos(ImVec2(1680, 0), ImGuiCond_Once);
-        ImGui::SetNextWindowSize(ImVec2(300, 1080), ImGuiCond_Once);
+        ImGui::SetNextWindowPos(ImVec2(1580, 0), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
 
         ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
         ImGui::Text("Procedural Controls!");
+        ImGui::SliderFloat("Chunk Size", &chunkSize, 0.5f, 100.0f);
         ImGui::Checkbox("Show Wires", &showWires);
         if (selected) {
             ImGui::Separator();
@@ -207,6 +211,21 @@ int main() {
             float& vertexY = customVerts[index + 1];
 
             ImGui::SliderFloat("Vertex Y", &vertexY, -5.0f, 5.0f);
+
+            ImGui::Separator();
+            if (ImGui::CollapsingHeader("Modifiers")) {
+                ImGui::Text("Not yet working (was just testing UI");
+                static int selectedModifier = 0;
+                const char* modifiers[] = { "Subdivision" };
+                ImGui::Combo("Add Modifier", &selectedModifier, modifiers, IM_ARRAYSIZE(modifiers));
+
+                ImGui::Separator();
+
+                if (selectedModifier == 0) {
+                    static int levels = 1;
+                    ImGui::SliderInt("Levels", &levels, 1, 6);
+                }
+            }
         }
         ImGui::Separator();
         if (ImGui::CollapsingHeader("Solid Shader Advanced Settings", ImGuiTreeNodeFlags_None)) {
