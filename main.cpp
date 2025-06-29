@@ -203,6 +203,7 @@ int main() {
         ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
 
         ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+        ImGui::PushItemWidth(200);
         ImGui::Text("Procedural Controls!");
         ImGui::SliderFloat("Chunk Size", &chunkSize, 0.5f, 100.0f);
         ImGui::Checkbox("Show Wires", &showWires);
@@ -226,6 +227,7 @@ int main() {
 
             ImGui::Separator();
             if (ImGui::CollapsingHeader("Modifiers")) {
+                // TODO: place it in a separate file (inside a struct) to have better control over it
                 ImGui::Text("Not yet working (was just testing UI");
                 static int selectedModifier = 0;
                 const char* modifiers[] = { "Subdivision" };
@@ -251,12 +253,14 @@ int main() {
             ImGui::ColorEdit3("On Selected Wires", (float*)&onSelectionWiresColor);
         }
         if (ImGui::CollapsingHeader("General settings")) {
+            ImGui::Indent();
             if (ImGui::CollapsingHeader("Camera")) {
                 ImGui::InputFloat("Scroll speed", &zoomSpeed);
                 ImGui::InputFloat("FOV", &camera.fovy, 0.0f, 90.0f);
             }
+            ImGui::Unindent();
         }
-
+        ImGui::PopItemWidth();
         ImGui::End();
 
         rlImGuiEnd();
