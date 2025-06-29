@@ -11,6 +11,7 @@ struct Entity {
     Model e_model;
     Mesh* e_mesh;
     BoundingBox e_boundingBox;
+    float e_position[3];
 
     std::vector<float> e_vertices;
     std::vector<float> e_normals;
@@ -21,6 +22,10 @@ struct Entity {
         e_mesh = &e_model.meshes[0];
 
         e_boundingBox = GenBoundingBox(*e_mesh);
+
+        e_position[0] = 0.0f;
+        e_position[1] = 0.0f;
+        e_position[2] = 0.0f;
 
         auto rawVerts = static_cast<float*>(e_mesh->vertices);
         e_vertices.assign(rawVerts, rawVerts + e_mesh->vertexCount * 3);
