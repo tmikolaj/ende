@@ -96,6 +96,8 @@ int main() {
     ImVec4 onSelectionMeshColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
     ImVec4 onSelectionWiresColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 
+    float position[3] = { 0, 0, 0 };
+
     while (!WindowShouldClose()) {
         if (IsCursorHidden()) {
             UpdateCamera(&camera, CAMERA_FIRST_PERSON);
@@ -163,11 +165,11 @@ int main() {
         BeginMode3D(camera);
 
         if (collision.hit) {
-            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, ImVecToColor(onSelectionMeshColor));
-            if (mode != SOLID) DrawModelWires(model, {0.1f,0.1f,0.1f}, 1.0f, ImVecToColor(onSelectionWiresColor));
+            if (mode != WIREFRAME) DrawModel(model, {position[0], position[1], position[2]}, 1.0f, ImVecToColor(onSelectionMeshColor));
+            if (mode != SOLID) DrawModelWires(model, {position[0] + 0.1f, position[1] + 0.1f, position[2] + 0.1f}, 1.0f, ImVecToColor(onSelectionWiresColor));
         } else {
-            if (mode != WIREFRAME) DrawModel(model, {0,0,0}, 1.0f, ImVecToColor(meshColor));
-            if (showWires || mode == WIREFRAME) DrawModelWires(model, {0,0,0}, 1.0f, RED);
+            if (mode != WIREFRAME) DrawModel(model, {position[0], position[1], position[2]}, 1.0f, ImVecToColor(meshColor));
+            if (showWires || mode == WIREFRAME) DrawModelWires(model, {position[0], position[1], position[2]}, 1.0f, RED);
         }
         if (mode != WIREFRAME) DrawModel(cube, {5,2.f,5}, 1.f, BLUE);
         DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
@@ -194,9 +196,10 @@ int main() {
             ImGui::ColorEdit3("Mesh color", (float*)&meshColor);
             ImGui::SliderInt("Grid size", &uiGridSize, 1, 100);
             ImGui::SliderFloat("Tile size", &uiTileSize, 0.1f, 10.0f);
+            ImGui::SliderFloat3("Position", (float*)&position, -100, 100);
 
             ImGui::Separator();
-            ImGui::Text("Vertex Selector");
+            ImGui::Text("Mesh Vertex Selector");
             ImGui::SliderInt("X Index", &selectedX, 0, uiGridSize);
             ImGui::SliderInt("Y Index", &selectedZ, 0, uiGridSize);
 
