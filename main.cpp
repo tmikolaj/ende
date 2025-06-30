@@ -215,6 +215,12 @@ int main() {
         ImGui::PopItemWidth();
         ImGui::PopID();
 
+        if (chunkSize > 100.0f) {
+            chunkSize = 100.0f;
+        } else if (chunkSize < 0.5f) {
+            chunkSize = 0.5f;
+        }
+
         ImGui::Checkbox("Show Wires", &showWires);
 
         if (selected) {
