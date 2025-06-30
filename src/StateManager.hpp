@@ -15,6 +15,8 @@ private:
     bool m_add;
     bool m_replace;
     bool m_remove;
+
+    int windowStatus;
 public:
     StateManager();
     ~StateManager() = default;
@@ -23,6 +25,8 @@ public:
     void popCurrent();
     void processState();
     std::unique_ptr<bStateTemplate>& getCurrentState();
+    void setWindowState(int status);
+    int getWindowState();
 };
 
 }
