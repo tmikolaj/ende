@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include "raylib.h"
-#include "rlgl.h"
 #include "raymath.h"
 #define RLIGHTS_IMPLEMENTATION
 #include "rlights.h"
@@ -205,8 +204,19 @@ int main() {
         ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
         ImGui::PushItemWidth(200);
         ImGui::Text("Procedural Controls!");
-        ImGui::SliderFloat("Chunk Size", &chunkSize, 0.5f, 100.0f);
+        ImGui::Text("Chunk Size");
+        ImGui::SameLine();
+
+        ImGui::PushID("ChunkSizeControl");
+        ImGui::SliderFloat("##Slider", &chunkSize, 0.5f, 100.0f);
+        ImGui::SameLine();
+        ImGui::PushItemWidth(50);
+        ImGui::InputFloat("##Input", &chunkSize, 0.0f, 0.0f);
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+
         ImGui::Checkbox("Show Wires", &showWires);
+
         if (selected) {
             ImGui::Separator();
             ImGui::Text("Selected Mesh");
