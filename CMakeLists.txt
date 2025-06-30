@@ -29,6 +29,8 @@ add_executable(3DProdGen
         src/ShaderManager.cpp
         src/StartMenu.cpp
         src/StateManager.cpp
+        src/Scene.cpp
+        src/Scene.hpp
 )
 
 target_link_libraries(3DProdGen
