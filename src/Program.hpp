@@ -2,22 +2,9 @@
 #define PROGRAM_HPP
 
 #include "bStateTemplate.hpp"
-#include "bEngineComponent.hpp"
 #include "ShaderManager.hpp"
-#include "StateManager.hpp"
 #include "StartMenu.hpp"
-#include "Entity.hpp"
-
-struct Context {
-    // TODO:
-    std::unique_ptr<Engine::StateManager> states;
-    std::unique_ptr<std::vector<Entity>> entities;
-
-    Context() {
-        states = std::make_unique<Engine::StateManager>();
-        entities = std::make_unique<std::vector<Entity>>();
-    }
-};
+#include "Context.hpp"
 
 class Program {
 private:
