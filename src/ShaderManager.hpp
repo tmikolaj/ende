@@ -16,6 +16,7 @@ public:
     ~ShaderManager() override = default;
 
     void init() override;
+    Shader initShader();
     Shader set(const Shader& prev) override;
     void clean() override;
 };

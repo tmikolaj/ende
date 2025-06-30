@@ -9,6 +9,11 @@ void Engine::ShaderManager::init() {
         throw std::runtime_error("ShaderManager::Engine::ShaderManager::init: Failed to load shader!");
     }
 }
+
+Shader Engine::ShaderManager::initShader() {
+    return solidShader;
+}
+
 Shader Engine::ShaderManager::set(const Shader& prev) {
     if (IsKeyPressed(KEY_F1)) {
         return solidShader;
@@ -20,6 +25,7 @@ Shader Engine::ShaderManager::set(const Shader& prev) {
 
     return prev;
 }
+
 void Engine::ShaderManager::clean() {
     UnloadShader(renderShader);
     UnloadShader(solidShader);
