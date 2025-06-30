@@ -3,7 +3,8 @@
 Engine::StateManager::StateManager() :
 m_add(false),
 m_remove(false),
-m_replace(false) {
+m_replace(false),
+windowStatus(0) {
 
 }
 void Engine::StateManager::add(std::unique_ptr<Engine::bStateTemplate> toAdd, bool replace) {
@@ -25,6 +26,7 @@ void Engine::StateManager::processState() {
 
     if (m_add) {
         if (m_replace) {
+            stateStack.top()->clean();
             stateStack.pop();
             m_replace = false;
         }
@@ -36,4 +38,12 @@ void Engine::StateManager::processState() {
 }
 std::unique_ptr<Engine::bStateTemplate> &Engine::StateManager::getCurrentState() {
     return stateStack.top();
+}
+
+void Engine::StateManager::setWindowState(int status) {
+    windowStatus = status;
+}
+
+int Engine::StateManager::getWindowState() {
+    return windowStatus;
 }
