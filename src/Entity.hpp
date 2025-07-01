@@ -37,6 +37,9 @@ struct Entity {
         e_colorValues = { 1.0f, 1.0f, 1.0f, 1.0f };
         e_color = ImVecToColor(e_colorValues);
     }
+
+    Entity(Mesh _mesh) : Entity(LoadModelFromMesh(_mesh)) {}
+
     Color ImVecToColor(const ImVec4& toConvert) {
         return (Color){
             static_cast<unsigned char>(toConvert.x * 255.0f),
@@ -45,6 +48,7 @@ struct Entity {
             255
         };
     }
+
     BoundingBox GenBoundingBox(const Mesh& mesh) {
         BoundingBox box = { 0 };
 
