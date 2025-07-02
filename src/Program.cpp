@@ -1,7 +1,8 @@
 #include "Program.hpp"
 
 Program::Program() :
-context(std::make_shared<Context>()) {
+context(std::make_shared<Context>()),
+shmgr() {
 
 }
 void Program::init() {
@@ -21,7 +22,7 @@ void Program::run() {
             if (w_state == EXIT) exit(0);
             context->states->processState();
             context->states->getCurrentState()->process();
-            shmgr.set(shader) = shader;
+            shmgr.set(shader);
             context->states->getCurrentState()->draw(shader);
         }
         if (w_state == NONE || w_state == EXIT) break;
