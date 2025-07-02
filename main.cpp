@@ -53,11 +53,11 @@ int main() {
     auto rawIndices = static_cast<unsigned short*>(gridMesh.indices);
     customIndices.assign(rawIndices, rawIndices + gridMesh.triangleCount * 3);
 
-    Entity entity(GenerateGridMesh(10, 1.0f));
-    Entity ecube(GenMeshCube(2.0f, 2.0f, 2.0f));
+    Entity entity(GenerateGridMesh(10, 1.0f), "plane");
+    Entity ecube(GenMeshCube(2.0f, 2.0f, 2.0f), "cube");
 
     std::vector<Entity> entities = { entity, ecube };
-    Entity* selectedEntity = nullptr;
+    int selectedEntity = -1;
 
     float lightColor[3] = { 1.0f, 1.0f, 1.0f };
     glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
@@ -120,16 +120,16 @@ int main() {
 
         ray = GetMouseRay(GetMousePosition(), camera);
         if (!ImGui::GetIO().WantCaptureMouse && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            selectedEntity = nullptr;
+            selectedEntity = -1;
             float closestHit = FLT_MAX;
 
-            for (auto& e : entities) {
-                e.e_selected = false;
-                RayCollision hit = GetRayCollisionBox(ray, e.e_boundingBox);
+            for (int i = 0; i < entities.size(); i++) {
+                entities[i].e_selected = false;
+                RayCollision hit = GetRayCollisionBox(ray, entities[i].e_boundingBox);
                 if (hit.hit && hit.distance < closestHit) {
-                    e.e_selected = true;
+                    entities[i].e_selected = true;
                     closestHit = hit.distance;
-                    selectedEntity = &e;
+                    selectedEntity = i;
                 }
             }
         }
@@ -189,8 +189,8 @@ int main() {
         for (auto& e : entities) {
             Vector3 epos(entity.e_position[0], entity.e_position[1], entity.e_position[2]);
             if (e.e_selected) {
-                if (mode != WIREFRAME) DrawModel(selectedEntity->e_model, epos, 1.0f, e.ImVecToColor(onSelectionMeshColor));
-                if (mode != SOLID) DrawModelWires(selectedEntity->e_model, epos, 1.0f, e.ImVecToColor(onSelectionWiresColor));
+                if (mode != WIREFRAME) DrawModel(entities[selectedEntity].e_model, epos, 1.0f, e.ImVecToColor(onSelectionMeshColor));
+                if (mode != SOLID) DrawModelWires(entities[selectedEntity].e_model, epos, 1.0f, e.ImVecToColor(onSelectionWiresColor));
             } else {
                 if (mode != WIREFRAME) DrawModel(e.e_model, epos, 1.0f, e.e_color);
                 if (showWires || mode == WIREFRAME) DrawModelWires(e.e_model, epos, 1.0f, RED);
@@ -210,9 +210,82 @@ int main() {
         ImGui::SetNextWindowPos(ImVec2(1580, 0), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
 
-        ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+        ImGui::Begin("Scene Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
         ImGui::PushItemWidth(200);
+
+        ImGui::SetWindowFontScale(1.5f);
+        ImGui::Text("Scene Entities");
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::SetWindowFontScale(1.0f);
+
+        if (entities.empty()) {
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No entities found!");
+        }
+
+        char renameBuffer[40];
+        bool openRenamePopup = false;
+
+        for (int i = 0; i < entities.size(); i++) {
+            std::string label = entities[i].e_name;
+
+            if (ImGui::Selectable(label.c_str(), selectedEntity == i)) {
+                selectedEntity = i;
+                entities[selectedEntity].e_selected = true;
+            }
+
+            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                selectedEntity = i;
+                ImGui::OpenPopup("context");
+            }
+        }
+
+        if (ImGui::BeginPopup("context")) {
+            if (ImGui::MenuItem("Delete")) {
+                if (selectedEntity >= 0 && selectedEntity < entities.size()) {
+
+                    entities.erase(entities.begin() + selectedEntity);
+                    selectedEntity = -1;
+                }
+            }
+            if (ImGui::MenuItem("Rename")) {
+                if (selectedEntity >= 0 && selectedEntity < entities.size()) {
+
+                    strncpy(renameBuffer, entities[selectedEntity].e_name.c_str(), sizeof(renameBuffer));
+                    renameBuffer[sizeof(renameBuffer) - 1] = '\0';
+                    openRenamePopup = true;
+                }
+            }
+            ImGui::EndPopup();
+        }
+
+        if (openRenamePopup) {
+            ImGui::OpenPopup("Rename Entity");
+            openRenamePopup = false;
+        }
+
+        if (ImGui::BeginPopupModal("Rename Entity", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("New Name");
+            ImGui::SameLine();
+            ImGui::InputText("##", renameBuffer, IM_ARRAYSIZE(renameBuffer));
+
+            if (ImGui::Button("OK")) {
+                if (selectedEntity >= 0 && selectedEntity < entities.size()) {
+                    entities[selectedEntity].e_name = std::string(renameBuffer);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::SetWindowFontScale(1.5f);
         ImGui::Text("Procedural Controls!");
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::SetWindowFontScale(1.0f);
         ImGui::Text("Chunk Size");
         ImGui::SameLine();
 
@@ -222,6 +295,7 @@ int main() {
         ImGui::PushItemWidth(50);
         ImGui::InputFloat("##Input", &chunkSize, 0.0f, 0.0f);
         ImGui::PopItemWidth();
+        ImGui::PushItemWidth(200);
         ImGui::PopID();
 
         if (chunkSize > 100.0f) {
@@ -232,14 +306,14 @@ int main() {
 
         ImGui::Checkbox("Show Wires", &showWires);
 
-        if (selectedEntity) {
+        if (selectedEntity >= 0 && selectedEntity < entities.size() - 1) {
             ImGui::Separator();
             ImGui::Text("Selected Mesh");
-            ImGui::ColorEdit3("Mesh color", (float*)&selectedEntity->e_colorValues);
-            selectedEntity->e_color = selectedEntity->ImVecToColor(selectedEntity->e_colorValues);
+            ImGui::ColorEdit3("Mesh color", (float*)&entities[selectedEntity].e_colorValues);
+            entities[selectedEntity].e_color = entities[selectedEntity].ImVecToColor(entities[selectedEntity].e_colorValues);
             ImGui::SliderInt("Grid size", &uiGridSize, 1, 100);
             ImGui::SliderFloat("Tile size", &uiTileSize, 0.1f, 10.0f);
-            ImGui::SliderFloat3("Position", (float*)&selectedEntity->e_position, -100, 100);
+            ImGui::SliderFloat3("Position", (float*)&entities[selectedEntity].e_position, -100, 100);
 
             ImGui::Separator();
             ImGui::Text("Mesh Vertex Selector");
