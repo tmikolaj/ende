@@ -6,6 +6,7 @@
 #include "raylib.h"
 
 struct Entity {
+    std::string e_name;
     ImVec4 e_colorValues;
     Color e_color;
     Model e_model;
@@ -18,7 +19,9 @@ struct Entity {
     std::vector<float> e_normals;
     std::vector<unsigned short> e_indices;
 
-    Entity(Model _model) {
+    Entity(Model _model, const std::string& _name) {
+        e_name = _name;
+
         e_model = _model;
         e_mesh = &e_model.meshes[0];
 
@@ -41,7 +44,7 @@ struct Entity {
         e_color = ImVecToColor(e_colorValues);
     }
 
-    Entity(Mesh _mesh) : Entity(LoadModelFromMesh(_mesh)) {}
+    Entity(Mesh _mesh, const std::string& _name) : Entity(LoadModelFromMesh(_mesh), _name) {}
 
     Color ImVecToColor(const ImVec4& toConvert) {
         return (Color){
