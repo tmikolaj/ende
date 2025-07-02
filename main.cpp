@@ -85,8 +85,6 @@ int main() {
     bool showWires = false;
     int mode = SOLID;
 
-    bool selected = false; // for dealing with ui and 3d model selection
-
     // for imgui (to change the values of these variables)
     int uiGridSize = 10;
     float uiTileSize = 1.0f;
@@ -124,10 +122,8 @@ int main() {
             float closestHit = FLT_MAX;
 
             for (int i = 0; i < entities.size(); i++) {
-                entities[i].e_selected = false;
                 RayCollision hit = GetRayCollisionBox(ray, entities[i].e_boundingBox);
                 if (hit.hit && hit.distance < closestHit) {
-                    entities[i].e_selected = true;
                     closestHit = hit.distance;
                     selectedEntity = i;
                 }
@@ -186,14 +182,14 @@ int main() {
 
         BeginMode3D(camera);
 
-        for (auto& e : entities) {
-            Vector3 epos(entity.e_position[0], entity.e_position[1], entity.e_position[2]);
-            if (e.e_selected) {
-                if (mode != WIREFRAME) DrawModel(entities[selectedEntity].e_model, epos, 1.0f, e.ImVecToColor(onSelectionMeshColor));
-                if (mode != SOLID) DrawModelWires(entities[selectedEntity].e_model, epos, 1.0f, e.ImVecToColor(onSelectionWiresColor));
+        for (int i = 0; i < static_cast<int>(entities.size()); i++) {
+            Vector3 epos(entities[i].e_position[0], entities[i].e_position[1], entities[i].e_position[2]);
+            if (selectedEntity == i) {
+                if (mode != WIREFRAME) DrawModel(entities[i].e_model, epos, 1.0f, entities[i].ImVecToColor(onSelectionMeshColor));
+                if (mode != SOLID) DrawModelWires(entities[i].e_model, epos, 1.0f, entities[i].ImVecToColor(onSelectionWiresColor));
             } else {
-                if (mode != WIREFRAME) DrawModel(e.e_model, epos, 1.0f, e.e_color);
-                if (showWires || mode == WIREFRAME) DrawModelWires(e.e_model, epos, 1.0f, RED);
+                if (mode != WIREFRAME) DrawModel(entities[i].e_model, epos, 1.0f, entities[i].e_color);
+                if (showWires || mode == WIREFRAME) DrawModelWires(entities[i].e_model, epos, 1.0f, RED);
             }
         }
 
@@ -230,7 +226,6 @@ int main() {
 
             if (ImGui::Selectable(label.c_str(), selectedEntity == i)) {
                 selectedEntity = i;
-                entities[selectedEntity].e_selected = true;
             }
 
             if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -268,15 +263,15 @@ int main() {
             ImGui::SameLine();
             ImGui::InputText("##", renameBuffer, IM_ARRAYSIZE(renameBuffer));
 
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
             if (ImGui::Button("OK")) {
                 if (selectedEntity >= 0 && selectedEntity < entities.size()) {
                     entities[selectedEntity].e_name = std::string(renameBuffer);
                     ImGui::CloseCurrentPopup();
                 }
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel")) {
-                ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
         }
@@ -306,7 +301,7 @@ int main() {
 
         ImGui::Checkbox("Show Wires", &showWires);
 
-        if (selectedEntity >= 0 && selectedEntity < entities.size() - 1) {
+        if (selectedEntity >= 0 && selectedEntity < entities.size()) {
             ImGui::Separator();
             ImGui::Text("Selected Mesh");
             ImGui::ColorEdit3("Mesh color", (float*)&entities[selectedEntity].e_colorValues);
