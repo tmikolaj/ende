@@ -8,6 +8,7 @@
 #include "external/rlImGui/rlImGui.h"
 #include "external/glm/glm.hpp"
 #include "external/glm/gtc/type_ptr.hpp"
+#include "src/Entity.hpp"
 
 std::vector<float> customVerts;
 std::vector<float> customNormals;
@@ -52,13 +53,12 @@ int main() {
     auto rawIndices = static_cast<unsigned short*>(gridMesh.indices);
     customIndices.assign(rawIndices, rawIndices + gridMesh.triangleCount * 3);
 
-    Model model = LoadModelFromMesh(gridMesh);
-    Mesh* mesh = &model.meshes[0];
+    Entity entity(GenerateGridMesh(10, 1.0f));
+    Entity ecube(GenMeshCube(2.0f, 2.0f, 2.0f));
 
-    Model cube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
-    cube.materials[0].shader = solidShader;
+    std::vector<Entity> entities = { entity, ecube };
+    Entity* selectedEntity = nullptr;
 
-    model.materials[0].shader = solidShader;
     float lightColor[3] = { 1.0f, 1.0f, 1.0f };
     glm::vec3 lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
     float lightDirection[3] = { lightDir.x, lightDir.y, lightDir.z };
@@ -118,11 +118,20 @@ int main() {
         camera.target = target;
         camera.up = { 0.0f, 1.0f, 0.0f };
 
+        ray = GetMouseRay(GetMousePosition(), camera);
         if (!ImGui::GetIO().WantCaptureMouse && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            ray = GetScreenToWorldRay(GetMousePosition(), camera);
-            collision = GetRayCollisionBox(ray, (BoundingBox){(Vector3){ 0, 0, 0 }, (Vector3){10, 0, 10}});
+            selectedEntity = nullptr;
+            float closestHit = FLT_MAX;
 
-            selected = collision.hit;
+            for (auto& e : entities) {
+                e.e_selected = false;
+                RayCollision hit = GetRayCollisionBox(ray, e.e_boundingBox);
+                if (hit.hit && hit.distance < closestHit) {
+                    e.e_selected = true;
+                    closestHit = hit.distance;
+                    selectedEntity = &e;
+                }
+            }
         }
 
         int x = uiGridSize / 2;
@@ -151,25 +160,25 @@ int main() {
             curr_m = "WIREFRAME";
         }
 
-        CalcNormals(customVerts.data(), static_cast<unsigned short*>(mesh->indices), customNormals.data(), mesh->vertexCount, mesh->triangleCount);
-        UpdateMeshBuffer(*mesh, 0, customVerts.data(), customVerts.size() * sizeof(float), 0);
-        UpdateMeshBuffer(*mesh, 2, customNormals.data(), customNormals.size() * sizeof(float), 0);
+        CalcNormals(customVerts.data(), static_cast<unsigned short*>(entity.e_mesh->indices), customNormals.data(), entity.e_mesh->vertexCount, entity.e_mesh->triangleCount);
+        UpdateMeshBuffer(*entity.e_mesh, 0, customVerts.data(), customVerts.size() * sizeof(float), 0);
+        UpdateMeshBuffer(*entity.e_mesh, 2, customNormals.data(), customNormals.size() * sizeof(float), 0);
         //UpdateMeshBuffer(mesh, 3, customColors.data(), customColors.size() * sizeof(unsigned char), 0);
 
         if (mode == SOLID) {
             SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
-            model.materials[0].shader = solidShader;
-            cube.materials[0].shader = solidShader;
+            entity.e_model.materials[0].shader = solidShader;
+            ecube.e_model.materials[0].shader = solidShader;
         } else if (mode == M_PREVIEW || mode == WIREFRAME) {
-            model.materials[0].shader = materialPreviewsh;
-            cube.materials[0].shader = materialPreviewsh;
+            entity.e_model.materials[0].shader = materialPreviewsh;
+            ecube.e_model.materials[0].shader = materialPreviewsh;
         } else {
             float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
             SetShaderValue(rendersh, rendersh.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
             UpdateLightValues(rendersh, lights[0]);
-            model.materials[0].shader = rendersh;
-            cube.materials[0].shader = rendersh;
+            entity.e_model.materials[0].shader = rendersh;
+            ecube.e_model.materials[0].shader = rendersh;
         }
 
         BeginDrawing();
@@ -177,16 +186,16 @@ int main() {
 
         BeginMode3D(camera);
 
-        if (collision.hit) {
-            if (mode != WIREFRAME) DrawModel(model, {position[0], position[1], position[2]}, 1.0f, ImVecToColor(onSelectionMeshColor));
-            if (mode != SOLID) DrawModelWires(model, {position[0] + 0.1f, position[1] + 0.1f, position[2] + 0.1f}, 1.0f, ImVecToColor(onSelectionWiresColor));
-        } else {
-            if (mode != WIREFRAME) DrawModel(model, {position[0], position[1], position[2]}, 1.0f, ImVecToColor(meshColor));
-            if (showWires || mode == WIREFRAME) DrawModelWires(model, {position[0], position[1], position[2]}, 1.0f, RED);
+        for (auto& e : entities) {
+            Vector3 epos(entity.e_position[0], entity.e_position[1], entity.e_position[2]);
+            if (e.e_selected) {
+                if (mode != WIREFRAME) DrawModel(selectedEntity->e_model, epos, 1.0f, e.ImVecToColor(onSelectionMeshColor));
+                if (mode != SOLID) DrawModelWires(selectedEntity->e_model, epos, 1.0f, e.ImVecToColor(onSelectionWiresColor));
+            } else {
+                if (mode != WIREFRAME) DrawModel(e.e_model, epos, 1.0f, e.e_color);
+                if (showWires || mode == WIREFRAME) DrawModelWires(e.e_model, epos, 1.0f, RED);
+            }
         }
-        if (mode != WIREFRAME) DrawModel(cube, {5,2.f,5}, 1.f, BLUE);
-        DrawModelWires(cube, {5,2.f,5}, 1.f, RED);
-        DrawText("L", 1, 2, 12, BLACK);
 
         DrawGrid(100, chunkSize);
         EndMode3D();
@@ -223,13 +232,14 @@ int main() {
 
         ImGui::Checkbox("Show Wires", &showWires);
 
-        if (selected) {
+        if (selectedEntity) {
             ImGui::Separator();
             ImGui::Text("Selected Mesh");
-            ImGui::ColorEdit3("Mesh color", (float*)&meshColor);
+            ImGui::ColorEdit3("Mesh color", (float*)&selectedEntity->e_colorValues);
+            selectedEntity->e_color = selectedEntity->ImVecToColor(selectedEntity->e_colorValues);
             ImGui::SliderInt("Grid size", &uiGridSize, 1, 100);
             ImGui::SliderFloat("Tile size", &uiTileSize, 0.1f, 10.0f);
-            ImGui::SliderFloat3("Position", (float*)&position, -100, 100);
+            ImGui::SliderFloat3("Position", (float*)&selectedEntity->e_position, -100, 100);
 
             ImGui::Separator();
             ImGui::Text("Mesh Vertex Selector");
@@ -285,29 +295,29 @@ int main() {
             prevGridSize = uiGridSize;
             prevTileSize = uiTileSize;
 
-            UnloadModel(model);
+            UnloadModel(entity.e_model);
 
             Mesh newMesh = GenerateGridMesh(uiGridSize, uiTileSize);
-            model = LoadModelFromMesh(newMesh);
-            model.materials[0].shader = solidShader;
+            entity.e_model = LoadModelFromMesh(newMesh);
+            entity.e_model.materials[0].shader = solidShader;
 
             // Update customVerts and customNormals from new mesh
-            auto rawV = static_cast<float*>(model.meshes[0].vertices);
-            customVerts.assign(rawV, rawV + model.meshes[0].vertexCount * 3);
-            auto rawN = static_cast<float*>(model.meshes[0].normals);
-            customNormals.assign(rawN, rawN + model.meshes[0].vertexCount * 3);
-            auto rawI = static_cast<unsigned short*>(model.meshes[0].indices);
-            customIndices.assign(rawI, rawI + model.meshes[0].triangleCount * 3);
+            auto rawV = static_cast<float*>(entity.e_model.meshes[0].vertices);
+            customVerts.assign(rawV, rawV + entity.e_model.meshes[0].vertexCount * 3);
+            auto rawN = static_cast<float*>(entity.e_model.meshes[0].normals);
+            customNormals.assign(rawN, rawN + entity.e_model.meshes[0].vertexCount * 3);
+            auto rawI = static_cast<unsigned short*>(entity.e_model.meshes[0].indices);
+            customIndices.assign(rawI, rawI + entity.e_model.meshes[0].triangleCount * 3);
 
-            mesh = &model.meshes[0];
+            entity.e_mesh = &entity.e_model.meshes[0];
         }
 
         EndDrawing();
     }
     UnloadShader(solidShader);
     UnloadShader(rendersh);
-    UnloadModel(model);
-    UnloadModel(cube);
+    UnloadModel(entity.e_model);
+    UnloadModel(ecube.e_model);
 
     rlImGuiShutdown();
     CloseWindow();
