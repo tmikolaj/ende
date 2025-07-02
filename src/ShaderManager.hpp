@@ -23,7 +23,7 @@ public:
 
     void init() override;
     Shader initShader();
-    void set(Shader& prev) override;
+    void set(Shader& s) override;
     void clean() override;
 };
 

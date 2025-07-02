@@ -11,7 +11,7 @@ public:
     virtual ~bEngineComponent() = default;
 
     virtual void init() = 0;
-    virtual void set(type& prev) = 0;
+    virtual void set(type& t) = 0;
     virtual void clean() = 0;
 };
 
