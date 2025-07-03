@@ -57,11 +57,37 @@ void Scene::init() {
     showWires = false;
     toggleWireframe = false;
 
+    // collision (to check if the entity was hit) init
+    Ray ray = { 0 };
+
     SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
     SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
 }
 
 void Scene::process() {
+    distance -= GetMouseWheelMove() * zoomSpeed;
+
+    Vector3 camPos = {
+        0 + distance,
+        0 + distance,
+        0 + distance
+    };
+    camera.position = camPos;
+
+    ray = GetMouseRay(GetMousePosition(), camera);
+    if (!ImGui::GetIO().WantCaptureMouse && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        selectedEntity = -1;
+        float closestHit = FLT_MAX;
+
+        for (int i = 0; i < m_context->entities->size(); i++) {
+            RayCollision hit = GetRayCollisionBox(ray, m_context->entities->at(i).e_boundingBox);
+            if (hit.hit && hit.distance < closestHit) {
+                closestHit = hit.distance;
+                selectedEntity = i;
+            }
+        }
+    }
+
     if (IsKeyPressed(KEY_F1)) {
 
         curr_m = "SOLID";
@@ -125,6 +151,8 @@ void Scene::draw() {
         }
     }
 
+    DrawGrid(100, chunkSize);
+
     EndMode3D();
 
     rlImGuiBegin();
@@ -145,8 +173,10 @@ void Scene::draw() {
     if (m_context->entities->empty()) {
         ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No entities found!");
     }
-    for (Entity& e : *m_context->entities) {
-        ImGui::Selectable(e.e_name.c_str());
+    for (int i = 0; i < m_context->entities->size(); i++) {
+        if (ImGui::Selectable(m_context->entities->at(i).e_name.c_str(), selectedEntity == i)) {
+            selectedEntity = i;
+        }
     }
 
     ImGui::End();

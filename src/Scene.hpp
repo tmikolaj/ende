@@ -45,6 +45,9 @@ private:
     float chunkSize;
     bool showWires;
     bool toggleWireframe;
+
+    // collision (to check if the entity was hit)
+    Ray ray;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;
