@@ -48,6 +48,11 @@ private:
 
     // collision (to check if the entity was hit)
     Ray ray;
+
+    // imgui variables
+    // rename
+    char renameBuffer[40];
+    bool openRenamePopup;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;

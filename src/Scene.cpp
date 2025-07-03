@@ -2,7 +2,8 @@
 
 Scene::Scene(std::shared_ptr<Context>& context) :
 m_context(context),
-camera({ 0 }) {
+camera({ 0 }),
+openRenamePopup(false) {
 
 }
 
@@ -173,17 +174,62 @@ void Scene::draw() {
     if (m_context->entities->empty()) {
         ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No entities found!");
     }
+
     for (int i = 0; i < m_context->entities->size(); i++) {
         if (ImGui::Selectable(m_context->entities->at(i).e_name.c_str(), selectedEntity == i)) {
             selectedEntity = i;
         }
+
+        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            selectedEntity = i;
+            ImGui::OpenPopup("Context");
+        }
+    }
+    if (ImGui::BeginPopup("Context")) {
+        if (ImGui::MenuItem("Delete")) {
+            if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
+
+                m_context->entities->erase(m_context->entities->begin() + selectedEntity);
+                selectedEntity = -1;
+            }
+        }
+        if (ImGui::MenuItem("Rename")) {
+            if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
+
+                strncpy(renameBuffer, m_context->entities->at(selectedEntity).e_name.c_str(), sizeof(renameBuffer));
+                renameBuffer[sizeof(renameBuffer) - 1] = '\0';
+                openRenamePopup = true;
+            }
+        }
+        ImGui::EndPopup();
+    }
+    if (openRenamePopup) {
+        openRenamePopup = false;
+        ImGui::OpenPopup("RenameEntity");
+    }
+
+    if (ImGui::BeginPopupModal("RenameEntity", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("New Name");
+        ImGui::SameLine();
+        ImGui::InputText("##RenameInput", renameBuffer, sizeof(renameBuffer));
+        if (ImGui::Button("Cancel")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("OK")) {
+            if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
+                m_context->entities->at(selectedEntity).e_name = std::string(renameBuffer);
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::EndPopup();
     }
 
     ImGui::End();
     rlImGuiEnd();
 
     std::string text = "Current mode: " + curr_m;
-    DrawText(text.c_str(), 100, 10, 20, BLACK);
+    DrawText(text.c_str(), 20, 10, 20, BLACK);
 
     EndDrawing();
 }
