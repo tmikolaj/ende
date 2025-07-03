@@ -26,7 +26,6 @@ target_link_libraries(rlImGui PUBLIC imgui raylib)
 add_executable(3DProdGen
         main.cpp
         src/Program.cpp
-        src/ShaderManager.cpp
         src/StartMenu.cpp
         src/StateManager.cpp
         src/Scene.cpp
