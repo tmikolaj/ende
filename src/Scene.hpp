@@ -56,6 +56,9 @@ private:
     float distance;
     // void color
     ImVec4 voidCol;
+    // solid shader
+    bool colorChanged;
+    bool dirChanged;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;

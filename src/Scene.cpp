@@ -62,6 +62,10 @@ void Scene::init() {
     // void color init
     voidCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
+    // solid shader init
+    colorChanged = false;
+    dirChanged = false;
+
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
 
@@ -133,6 +137,7 @@ void Scene::draw() {
     BeginDrawing();
     ClearBackground(ImVecToColor(voidCol));
 
+    // apply shader to all entities
     for (int i = 0; i < m_context->entities->size(); i++) {
         Entity& e = m_context->entities->at(i);
         if (currentSh == SOLID) {
@@ -144,8 +149,18 @@ void Scene::draw() {
         }
     }
 
+    if (colorChanged) {
+        SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
+    }
+    if (dirChanged) {
+        auto newDir = glm::vec3(lightDirection[0], lightDirection[1], lightDirection[2]);
+        lightDir = glm::normalize(newDir);
+        SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
+    }
+
     BeginMode3D(camera);
 
+    // draw entities
     for (int i = 0; i < m_context->entities->size(); i++) {
         if (!m_context->entities->at(i).e_visible) continue;
 
@@ -268,10 +283,35 @@ void Scene::draw() {
     if (ImGui::Button("Advanced Settings")) {
         ImGui::OpenPopup("AdvancedSettingsPopup");
     }
-    if (ImGui::BeginPopupModal("AdvancedSettingsPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal("AdvancedSettingsPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
+        ImGui::SetWindowFontScale(2.0f);
+        ImGui::Text("Advanced Settings");
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::SameLine();
+        ImGui::SetCursorPos(ImVec2(300, 10));
         if (ImGui::Button("X")) {
             ImGui::CloseCurrentPopup();
         }
+        ImGui::PushItemWidth(200);
+        ImGui::Dummy(ImVec2(0, 5));
+        if (ImGui::CollapsingHeader("Camera")) {
+            ImGui::Text("Zoom Speed");
+            ImGui::SliderFloat("##ZoomSpeedSlider", &zoomSpeed, 1.0f, 50.0f);
+            ImGui::SameLine();
+            ImGui::PushItemWidth(80);
+            ImGui::InputFloat("##ZoomSpeedInput", &zoomSpeed);
+            ImGui::PopItemWidth();
+            if (zoomSpeed < 1.0f) zoomSpeed = 1.0f;
+            if (zoomSpeed > 50.0f) zoomSpeed = 50.0f;
+        }
+        if (ImGui::CollapsingHeader("Solid Shader")) {
+            ImGui::Text("Light Color");
+            colorChanged = ImGui::ColorEdit3("##SolidLightColor", lightColor);
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Light Direction");
+            dirChanged = ImGui::SliderFloat3("##SolidLightDirection", lightDirection, -1.0f, 1.0f);
+        }
+
         ImGui::EndPopup();
     }
 
