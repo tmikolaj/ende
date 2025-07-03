@@ -26,7 +26,7 @@ void Scene::init() {
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    m_context->entities->push_back(Entity(GenMeshCube(2.0f, 2.0f, 2.0f), "cube"));
+    m_context->entities->push_back(Entity(GenMeshCube(1.0f, 1.0f, 1.0f), "cube"));
 
     // render/shader variables init
     selectedEntity = -1;
@@ -245,7 +245,9 @@ void Scene::draw() {
     ImGui::Text("Scene settings");
     ImGui::SetWindowFontScale(1.0f);
 
+    ImGui::Dummy(ImVec2(0, 5));
     ImGui::Checkbox("Show grid", &showGrid);
+    ImGui::Dummy(ImVec2(0, 2.5f));
     ImGui::BeginDisabled(!showGrid);
     ImGui::Text("Chunk Size");
     ImGui::SliderFloat("##ChunkSizeSlider", &chunkSize, 0.5f, 100.0f);
@@ -257,9 +259,21 @@ void Scene::draw() {
     if (chunkSize > 100.0f) chunkSize = 100.0f;
     ImGui::EndDisabled();
 
+    ImGui::Dummy(ImVec2(0, 2.5f));
     ImGui::Text("Void Color");
-    ImGui::SameLine();
     ImGui::ColorEdit3("##VoidColorEdit", (float*)&voidCol);
+
+    // ADVANCED SETTINGS
+    ImGui::Dummy(ImVec2(0, 2.5f));
+    if (ImGui::Button("Advanced Settings")) {
+        ImGui::OpenPopup("AdvancedSettingsPopup");
+    }
+    if (ImGui::BeginPopupModal("AdvancedSettingsPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::Button("X")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 
     ImGui::End();
     rlImGuiEnd();
