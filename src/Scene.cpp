@@ -81,7 +81,10 @@ void Scene::process() {
         float closestHit = FLT_MAX;
 
         for (int i = 0; i < m_context->entities->size(); i++) {
+            if (!m_context->entities->at(i).e_visible) continue;
+
             RayCollision hit = GetRayCollisionBox(ray, m_context->entities->at(i).e_boundingBox);
+
             if (hit.hit && hit.distance < closestHit) {
                 closestHit = hit.distance;
                 selectedEntity = i;
@@ -140,6 +143,8 @@ void Scene::draw() {
     BeginMode3D(camera);
 
     for (int i = 0; i < m_context->entities->size(); i++) {
+        if (!m_context->entities->at(i).e_visible) continue;
+
         auto epos = static_cast<Vector3>(m_context->entities->at(i).e_position[0],
                                             m_context->entities->at(i).e_position[1],
                                             m_context->entities->at(i).e_position[2]);
@@ -202,6 +207,10 @@ void Scene::draw() {
                 renameBuffer[sizeof(renameBuffer) - 1] = '\0';
                 openRenamePopup = true;
             }
+        }
+        std::string label = m_context->entities->at(selectedEntity).e_visible ? "Hide" : "Show";
+        if (ImGui::MenuItem(label.c_str())) {
+            m_context->entities->at(selectedEntity).e_visible = !m_context->entities->at(selectedEntity).e_visible;
         }
         ImGui::EndPopup();
     }

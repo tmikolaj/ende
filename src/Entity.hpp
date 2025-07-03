@@ -6,11 +6,14 @@
 #include "raylib.h"
 
 struct Entity {
+    Model e_model;
+    Mesh* e_mesh;
+
     std::string e_name;
     ImVec4 e_colorValues;
     Color e_color;
-    Model e_model;
-    Mesh* e_mesh;
+    bool e_visible;
+
     BoundingBox e_boundingBox;
     float e_position[3];
 
@@ -39,6 +42,8 @@ struct Entity {
 
         e_colorValues = { 1.0f, 1.0f, 1.0f, 1.0f };
         e_color = ImVecToColor(e_colorValues);
+
+        e_visible = true;
     }
 
     Entity(Mesh _mesh, const std::string& _name) : Entity(LoadModelFromMesh(_mesh), _name) {}
