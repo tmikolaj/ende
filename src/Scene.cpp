@@ -166,6 +166,7 @@ void Scene::draw() {
     ImGui::Begin("Scene Manager", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
     ImGui::PushItemWidth(200);
 
+    // SCENE ENTITIES
     ImGui::SetWindowFontScale(2.0f);
     ImGui::Text("Scene Entities");
     ImGui::SetWindowFontScale(1.0f);
@@ -185,6 +186,7 @@ void Scene::draw() {
             ImGui::OpenPopup("Context");
         }
     }
+    // ENTITIES OPTIONS
     if (ImGui::BeginPopup("Context")) {
         if (ImGui::MenuItem("Delete")) {
             if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
@@ -224,6 +226,20 @@ void Scene::draw() {
         }
         ImGui::EndPopup();
     }
+    // SCENE SETTINGS
+    ImGui::Dummy(ImVec2(0, 5));
+    ImGui::SetWindowFontScale(1.5f);
+    ImGui::Text("Scene settings");
+    ImGui::SetWindowFontScale(1.0f);
+
+    ImGui::Text("Chunk Size");
+    ImGui::SliderFloat("##ChunkSizeSlider", &chunkSize, 0.5f, 100.0f);
+    ImGui::SameLine();
+    ImGui::PushItemWidth(50);
+    ImGui::InputFloat("##ChunkSizeInput", &chunkSize);
+    ImGui::PopItemWidth();
+    if (chunkSize < 0.5f) chunkSize = 0.5f;
+    if (chunkSize > 100.0f) chunkSize = 100.0f;
 
     ImGui::End();
     rlImGuiEnd();
