@@ -59,6 +59,9 @@ void Scene::init() {
     showWires = false;
     toggleWireframe = false;
 
+    // void color init
+    voidCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
 
@@ -128,7 +131,7 @@ void Scene::draw() {
     }
 
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(ImVecToColor(voidCol));
 
     for (int i = 0; i < m_context->entities->size(); i++) {
         Entity& e = m_context->entities->at(i);
@@ -253,6 +256,10 @@ void Scene::draw() {
     if (chunkSize < 0.5f) chunkSize = 0.5f;
     if (chunkSize > 100.0f) chunkSize = 100.0f;
     ImGui::EndDisabled();
+
+    ImGui::Text("Void Color");
+    ImGui::SameLine();
+    ImGui::ColorEdit3("##VoidColorEdit", (float*)&voidCol);
 
     ImGui::End();
     rlImGuiEnd();

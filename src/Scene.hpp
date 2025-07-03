@@ -54,6 +54,8 @@ private:
     // camera
     float zoomSpeed;
     float distance;
+    // void color
+    ImVec4 voidCol;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;
