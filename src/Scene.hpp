@@ -38,13 +38,6 @@ private:
 
     // camera related variables
     Camera3D camera;
-    float zoomSpeed;
-    float distance;
-
-    // scene controls
-    float chunkSize;
-    bool showWires;
-    bool toggleWireframe;
 
     // collision (to check if the entity was hit)
     Ray ray;
@@ -53,6 +46,14 @@ private:
     // rename
     char renameBuffer[40];
     bool openRenamePopup;
+    // scene controls
+    float chunkSize;
+    bool showGrid;
+    bool showWires;
+    bool toggleWireframe;
+    // camera
+    float zoomSpeed;
+    float distance;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;

@@ -55,6 +55,7 @@ void Scene::init() {
 
     // scene controls init
     chunkSize = 2.5f;
+    showGrid = true;
     showWires = false;
     toggleWireframe = false;
 
@@ -157,7 +158,7 @@ void Scene::draw() {
         }
     }
 
-    DrawGrid(100, chunkSize);
+    if (showGrid) DrawGrid(100, chunkSize);
 
     EndMode3D();
 
@@ -241,6 +242,8 @@ void Scene::draw() {
     ImGui::Text("Scene settings");
     ImGui::SetWindowFontScale(1.0f);
 
+    ImGui::Checkbox("Show grid", &showGrid);
+    ImGui::BeginDisabled(!showGrid);
     ImGui::Text("Chunk Size");
     ImGui::SliderFloat("##ChunkSizeSlider", &chunkSize, 0.5f, 100.0f);
     ImGui::SameLine();
@@ -249,6 +252,7 @@ void Scene::draw() {
     ImGui::PopItemWidth();
     if (chunkSize < 0.5f) chunkSize = 0.5f;
     if (chunkSize > 100.0f) chunkSize = 100.0f;
+    ImGui::EndDisabled();
 
     ImGui::End();
     rlImGuiEnd();
