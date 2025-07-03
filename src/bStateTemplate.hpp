@@ -10,7 +10,7 @@ public:
     virtual ~bStateTemplate() = default;
     virtual void init() = 0;
     virtual void process() = 0;
-    virtual void draw(const Shader& sh) = 0;
+    virtual void draw() = 0;
     virtual void clean() = 0;
 };
 

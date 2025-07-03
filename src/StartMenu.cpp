@@ -18,7 +18,7 @@ void StartMenu::process() {
     // TODO: Will later process some loaded information
 }
 
-void StartMenu::draw(const Shader& sh) {
+void StartMenu::draw() {
     BeginDrawing();
     ClearBackground((Color){44, 44, 44, 255});
 
@@ -112,5 +112,5 @@ void StartMenu::draw(const Shader& sh) {
 }
 
 void StartMenu::clean() {
-    CloseWindow();
+
 }

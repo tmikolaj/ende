@@ -20,7 +20,7 @@ public:
 
     void init() override;
     void process() override;
-    void draw(const Shader& sh) override;
+    void draw() override;
     void clean() override;
 };
 
