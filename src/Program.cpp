@@ -1,14 +1,11 @@
 #include "Program.hpp"
 
 Program::Program() :
-context(std::make_shared<Context>()),
-shmgr() {
+context(std::make_shared<Context>()) {
 
 }
 void Program::init() {
     InitWindow(800, 600, "3DProdGen");
-    shmgr.init();
-    shader = shmgr.initShader();
     context->states->setWindowState(NONE);
     context->states->add(std::make_unique<StartMenu>(context));
     context->states->processState();
@@ -22,8 +19,7 @@ void Program::run() {
             if (w_state == EXIT) exit(0);
             context->states->processState();
             context->states->getCurrentState()->process();
-            shmgr.set(shader);
-            context->states->getCurrentState()->draw(shader);
+            context->states->getCurrentState()->draw();
         }
         if (w_state == NONE || w_state == EXIT) break;
     }
