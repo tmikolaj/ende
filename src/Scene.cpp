@@ -301,7 +301,9 @@ void Scene::draw() {
     ImGui::Dummy(ImVec2(0, 2.5f));
     ImGui::BeginDisabled(!showGrid);
     ImGui::Text("Chunk Size");
+    ImGui::PushItemWidth(300);
     ImGui::SliderFloat("##ChunkSizeSlider", &chunkSize, 0.5f, 100.0f);
+    ImGui::PopItemWidth();
     ImGui::SameLine();
     ImGui::PushItemWidth(50);
     ImGui::InputFloat("##ChunkSizeInput", &chunkSize);
