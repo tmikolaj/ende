@@ -24,8 +24,6 @@ private:
     Shader solidShader;
     Shader materialPreviewShader;
     Shader renderShader;
-    ImVec4 onSelectionMeshColor;
-    ImVec4 onSelectionWiresColor;
     std::string curr_m;
 
     // shader related variables
@@ -59,6 +57,11 @@ private:
     // solid shader
     bool colorChanged;
     bool dirChanged;
+    // mesh
+    bool positionChanged;
+    // selection colors
+    ImVec4 onSelectionMeshColor;
+    ImVec4 onSelectionWiresColor;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;
