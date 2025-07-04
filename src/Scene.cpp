@@ -69,6 +69,9 @@ void Scene::init() {
     showWires = false;
     toggleWireframe = false;
 
+    // program settings init
+    useStrictSearch = false;
+
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
 
@@ -196,11 +199,57 @@ void Scene::draw() {
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Dummy(ImVec2(0, 5));
 
+    static char searchBuffer[40] = "";
+    static bool inputActive = false;
+    static bool shouldFocus = false;
+
+    ImGui::PushItemWidth(380);
+
+    ImGui::SetWindowFontScale(1.2f);
+    if (!inputActive) {
+        if (ImGui::Selectable("Search entity...")) {
+            inputActive = true;
+            shouldFocus = true;
+        }
+    }
+    static bool searchEnterPressed = false;
+    static bool searchJustActivated = false;
+
+    if (inputActive) {
+        if (shouldFocus) {
+            ImGui::SetKeyboardFocusHere();
+            shouldFocus = false;
+            searchJustActivated = true;
+        }
+        searchEnterPressed = ImGui::InputText("##SearchInput", searchBuffer, IM_ARRAYSIZE(searchBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+
+        if (searchBuffer[0] == '\0' && searchEnterPressed) inputActive = false;
+        if (searchBuffer[0] == '\0' && !searchJustActivated && !ImGui::IsItemActive() && !ImGui::IsItemHovered()) inputActive = false;
+
+        searchJustActivated = false;
+    }
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::Dummy(ImVec2(0, 2.5f));
+
+    ImGui::PopItemWidth();
+
     if (m_context->entities->empty()) {
         ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No entities found!");
     }
 
+    std::string substringToSearch = searchBuffer;
+
     for (int i = 0; i < m_context->entities->size(); i++) {
+        const std::string& entityName = m_context->entities->at(i).e_name;
+
+        if (!substringToSearch.empty()) {
+            if (!useStrictSearch) {
+                if (entityName.find(substringToSearch) == std::string::npos) continue;
+            } else {
+                if (entityName.compare(0, strlen(searchBuffer), searchBuffer) != 0) continue;
+            }
+        }
+
         if (ImGui::Selectable(m_context->entities->at(i).e_name.c_str(), selectedEntity == i)) {
             selectedEntity = i;
         }
@@ -231,7 +280,6 @@ void Scene::draw() {
                 selectedEntity = -1;
             }
         }
-
 
         ImGui::EndPopup();
     }
@@ -370,6 +418,10 @@ void Scene::draw() {
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("On Selection Wires Color");
             ImGui::ColorEdit3("##OnSelectionWiresColorEdit", reinterpret_cast<float *>(&onSelectionWiresColor));
+        }
+        if (ImGui::CollapsingHeader("Program settings")) {
+            ImGui::Text("Strict Search");
+            ImGui::Checkbox("##StrictSearch", &useStrictSearch);
         }
 
         ImGui::EndPopup();

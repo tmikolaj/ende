@@ -62,6 +62,8 @@ private:
     // selection colors
     ImVec4 onSelectionMeshColor;
     ImVec4 onSelectionWiresColor;
+    // program settings
+    bool useStrictSearch;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;
