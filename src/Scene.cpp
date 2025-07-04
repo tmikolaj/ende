@@ -77,14 +77,16 @@ void Scene::init() {
 }
 
 void Scene::process() {
-    distance -= GetMouseWheelMove() * zoomSpeed;
+    if (!ImGui::GetIO().WantCaptureMouse) {
+        distance -= GetMouseWheelMove() * zoomSpeed;
 
-    Vector3 camPos = {
-        0 + distance,
-        0 + distance,
-        0 + distance
-    };
-    camera.position = camPos;
+        Vector3 camPos = {
+            0 + distance,
+            0 + distance,
+            0 + distance
+        };
+        camera.position = camPos;
+    }
 
     ray = GetMouseRay(GetMousePosition(), camera);
     if (!ImGui::GetIO().WantCaptureMouse && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -180,6 +182,7 @@ void Scene::draw() {
     rlImGuiBegin();
 
     int mw = GetScreenWidth();
+    int mh = GetScreenHeight();
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
@@ -312,8 +315,9 @@ void Scene::draw() {
     ImGui::ColorEdit3("##VoidColorEdit", reinterpret_cast<float *>(&voidCol));
 
     // ADVANCED SETTINGS
-    ImGui::Dummy(ImVec2(0, 2.5f));
-    if (ImGui::Button("Advanced Settings")) {
+    ImGui::Dummy(ImVec2(0, mh - 300));
+    ImGui::SetCursorPosX(10);
+    if (ImGui::Button("Advanced Settings", ImVec2(380, 40))) {
         ImGui::OpenPopup("AdvancedSettingsPopup");
     }
     if (ImGui::BeginPopupModal("AdvancedSettingsPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
