@@ -62,7 +62,8 @@ void StartMenu::draw() {
         ImGui::PushItemWidth(180);
         ImGui::Text("Project Name");
         ImGui::SameLine();
-        ImGui::InputText("##", nameBuffer, IM_ARRAYSIZE(nameBuffer));
+        ImGui::SetKeyboardFocusHere();
+        bool enterPressed = ImGui::InputText("##", nameBuffer, IM_ARRAYSIZE(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         ImGui::PopItemWidth();
 
         ImGui::SetCursorPosX(270.0f);
@@ -73,7 +74,7 @@ void StartMenu::draw() {
         }
         ImGui::SetCursorPosX(10.0f);
         ImGui::SetCursorPosY(85.0f);
-        if (ImGui::Button("Create")) {
+        if (ImGui::Button("Create") || enterPressed) {
             if (nameBuffer[0] == '\0') {
                 showEmptyNameWarning = true;
             } else {

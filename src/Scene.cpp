@@ -212,13 +212,6 @@ void Scene::draw() {
     }
     // ENTITY OPTIONS
     if (ImGui::BeginPopup("Context")) {
-        if (ImGui::MenuItem("Delete")) {
-            if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
-
-                m_context->entities->erase(m_context->entities->begin() + selectedEntity);
-                selectedEntity = -1;
-            }
-        }
         if (ImGui::MenuItem("Rename")) {
             if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
 
@@ -231,6 +224,15 @@ void Scene::draw() {
         if (ImGui::MenuItem(label.c_str())) {
             m_context->entities->at(selectedEntity).e_visible = !m_context->entities->at(selectedEntity).e_visible;
         }
+        if (ImGui::MenuItem("Delete")) {
+            if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
+
+                m_context->entities->erase(m_context->entities->begin() + selectedEntity);
+                selectedEntity = -1;
+            }
+        }
+
+
         ImGui::EndPopup();
     }
     if (openRenamePopup) {
@@ -241,16 +243,28 @@ void Scene::draw() {
     if (ImGui::BeginPopupModal("RenameEntity", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("New Name");
         ImGui::SameLine();
-        ImGui::InputText("##RenameInput", renameBuffer, sizeof(renameBuffer));
+        ImGui::SetKeyboardFocusHere();
+        bool renameEnterPressed = ImGui::InputText("##RenameInput", renameBuffer, sizeof(renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         if (ImGui::Button("Cancel")) {
             ImGui::CloseCurrentPopup();
         }
+        bool showEmptyRenameWarning;
         ImGui::SameLine();
-        if (ImGui::Button("OK")) {
+        if (ImGui::Button("OK") || renameEnterPressed) {
             if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
-                m_context->entities->at(selectedEntity).e_name = std::string(renameBuffer);
-                ImGui::CloseCurrentPopup();
+                if (renameBuffer[0] == '\0') {
+                    showEmptyRenameWarning = true;
+                } else {
+                    showEmptyRenameWarning = false;
+                    m_context->entities->at(selectedEntity).e_name = std::string(renameBuffer);
+                    ImGui::CloseCurrentPopup();
+                }
             }
+        }
+        if (showEmptyRenameWarning) {
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(110);
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Name cannot be empty!");
         }
         ImGui::EndPopup();
     }
