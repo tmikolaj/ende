@@ -47,8 +47,6 @@ private:
     // scene controls
     float chunkSize;
     bool showGrid;
-    bool showWires;
-    bool toggleWireframe;
     // camera
     float zoomSpeed;
     float distance;
@@ -57,8 +55,10 @@ private:
     // solid shader
     bool colorChanged;
     bool dirChanged;
-    // mesh
+    // mesh controls
     bool positionChanged;
+    bool showWires;
+    bool toggleWireframe;
     // selection colors
     ImVec4 onSelectionMeshColor;
     ImVec4 onSelectionWiresColor;

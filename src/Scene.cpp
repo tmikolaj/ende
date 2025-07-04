@@ -56,8 +56,6 @@ void Scene::init() {
     // scene controls init
     chunkSize = 2.5f;
     showGrid = true;
-    showWires = false;
-    toggleWireframe = false;
 
     // void color init
     voidCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -66,8 +64,10 @@ void Scene::init() {
     colorChanged = false;
     dirChanged = false;
 
-    // mesh init
+    // mesh controls init
     positionChanged = false;
+    showWires = false;
+    toggleWireframe = false;
 
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
@@ -109,12 +109,10 @@ void Scene::process() {
         currentSh = SOLID;
         SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
         SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
-        toggleWireframe = false;
     } else if (IsKeyPressed(KEY_F2)) {
 
         curr_m = "MATERIAL PREVIEW";
         currentSh = M_PREVIEW;
-        toggleWireframe = false;
     } else if (IsKeyPressed(KEY_F3)) {
 
         curr_m = "RENDER";
@@ -122,12 +120,10 @@ void Scene::process() {
 
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-        toggleWireframe = false;
     } else if (IsKeyPressed(KEY_F4)) {
 
         curr_m = "WIREFRAME";
         currentSh = WIREFRAME;
-        toggleWireframe = true;
     }
 }
 
@@ -145,7 +141,7 @@ void Scene::draw() {
         Entity& e = m_context->entities->at(i);
         if (currentSh == SOLID) {
             e.e_model.materials[0].shader = solidShader;
-        } else if (currentSh == M_PREVIEW) {
+        } else if (currentSh == M_PREVIEW || currentSh == WIREFRAME) {
             e.e_model.materials[0].shader = materialPreviewShader;
         } else {
             e.e_model.materials[0].shader = renderShader;
@@ -170,11 +166,11 @@ void Scene::draw() {
         Vector3 epos(m_context->entities->at(i).e_position[0], m_context->entities->at(i).e_position[1], m_context->entities->at(i).e_position[2]);
 
         if (selectedEntity == i) {
-            if (currentSh != WIREFRAME) DrawModel(m_context->entities->at(i).e_model, epos, 1.0f, ImVecToColor(onSelectionMeshColor));
+            if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities->at(i).e_model, epos, 1.0f, ImVecToColor(onSelectionMeshColor));
             if (currentSh != SOLID) DrawModelWires(m_context->entities->at(i).e_model, epos, 1.0f, ImVecToColor(onSelectionWiresColor));
         } else {
-            if (currentSh != WIREFRAME) DrawModel(m_context->entities->at(i).e_model, epos, 1.0f, m_context->entities->at(i).e_color);
-            if (currentSh != SOLID && (showWires || toggleWireframe)) DrawModelWires(m_context->entities->at(i).e_model, epos, 1.0f, RED);
+            if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities->at(i).e_model, epos, 1.0f, m_context->entities->at(i).e_color);
+            if (currentSh != SOLID && (showWires || toggleWireframe || currentSh == WIREFRAME)) DrawModelWires(m_context->entities->at(i).e_model, epos, 1.0f, RED);
         }
     }
 
@@ -212,7 +208,7 @@ void Scene::draw() {
             ImGui::OpenPopup("Context");
         }
     }
-    // ENTITIES OPTIONS
+    // ENTITY OPTIONS
     if (ImGui::BeginPopup("Context")) {
         if (ImGui::MenuItem("Delete")) {
             if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
@@ -268,6 +264,7 @@ void Scene::draw() {
         ImGui::ColorEdit3("Mesh color", reinterpret_cast<float*>(&m_context->entities->at(selectedEntity).e_colorValues));
         m_context->entities->at(selectedEntity).e_color = m_context->entities->at(selectedEntity).ImVecToColor(m_context->entities->at(selectedEntity).e_colorValues);
 
+        ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Text("Entity Position");
         ImGui::Text("X");
         ImGui::SameLine();
@@ -283,6 +280,13 @@ void Scene::draw() {
             positionChanged = false;
             m_context->entities->at(selectedEntity).e_boundingBox = m_context->entities->at(selectedEntity).GenBoundingBox(*m_context->entities->at(selectedEntity).e_mesh, m_context->entities->at(selectedEntity).e_position);
         }
+
+        ImGui::Dummy(ImVec2(0, 2.5f));
+        ImGui::Checkbox("Toggle Wireframe", &toggleWireframe);
+        if (toggleWireframe) showWires = false;
+        ImGui::BeginDisabled(toggleWireframe);
+        ImGui::Checkbox("Show Wires", &showWires);
+        ImGui::EndDisabled();
     }
     // SCENE SETTINGS
     ImGui::Dummy(ImVec2(0, 5));
