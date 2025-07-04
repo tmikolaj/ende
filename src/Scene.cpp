@@ -137,8 +137,7 @@ void Scene::draw() {
     ClearBackground(ImVecToColor(voidCol));
 
     // apply shader to all entities
-    for (int i = 0; i < m_context->entities->size(); i++) {
-        Entity& e = m_context->entities->at(i);
+    for (Entity& e : *m_context->entities) {
         if (currentSh == SOLID) {
             e.e_model.materials[0].shader = solidShader;
         } else if (currentSh == M_PREVIEW || currentSh == WIREFRAME) {
