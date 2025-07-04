@@ -379,8 +379,7 @@ void Scene::draw() {
     ImGui::ColorEdit3("##VoidColorEdit", reinterpret_cast<float *>(&voidCol));
 
     // ADVANCED SETTINGS
-    ImGui::Dummy(ImVec2(0, mh - 300));
-    ImGui::SetCursorPosX(10);
+    ImGui::SetCursorPos(ImVec2(10, mh - 50));
     if (ImGui::Button("Advanced Settings", ImVec2(380, 40))) {
         ImGui::OpenPopup("AdvancedSettingsPopup");
     }
@@ -420,8 +419,7 @@ void Scene::draw() {
             ImGui::ColorEdit3("##OnSelectionWiresColorEdit", reinterpret_cast<float *>(&onSelectionWiresColor));
         }
         if (ImGui::CollapsingHeader("Program settings")) {
-            ImGui::Text("Strict Search");
-            ImGui::Checkbox("##StrictSearch", &useStrictSearch);
+            ImGui::Checkbox("Strict Search", &useStrictSearch);
         }
 
         ImGui::EndPopup();
