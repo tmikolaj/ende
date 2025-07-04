@@ -66,6 +66,9 @@ void Scene::init() {
     colorChanged = false;
     dirChanged = false;
 
+    // mesh init
+    positionChanged = false;
+
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
 
@@ -164,9 +167,8 @@ void Scene::draw() {
     for (int i = 0; i < m_context->entities->size(); i++) {
         if (!m_context->entities->at(i).e_visible) continue;
 
-        auto epos = static_cast<Vector3>(m_context->entities->at(i).e_position[0],
-                                            m_context->entities->at(i).e_position[1],
-                                            m_context->entities->at(i).e_position[2]);
+        Vector3 epos(m_context->entities->at(i).e_position[0], m_context->entities->at(i).e_position[1], m_context->entities->at(i).e_position[2]);
+
         if (selectedEntity == i) {
             if (currentSh != WIREFRAME) DrawModel(m_context->entities->at(i).e_model, epos, 1.0f, ImVecToColor(onSelectionMeshColor));
             if (currentSh != SOLID) DrawModelWires(m_context->entities->at(i).e_model, epos, 1.0f, ImVecToColor(onSelectionWiresColor));
@@ -254,6 +256,34 @@ void Scene::draw() {
         }
         ImGui::EndPopup();
     }
+    // ENTITY SETTINGS
+    if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::SetWindowFontScale(1.5f);
+        ImGui::Text("Entity Settings");
+        ImGui::SetWindowFontScale(1.0f);
+
+        ImGui::Dummy(ImVec2(0, 2.5f));
+        ImGui::Text("Entity Color");
+        ImGui::ColorEdit3("Mesh color", reinterpret_cast<float*>(&m_context->entities->at(selectedEntity).e_colorValues));
+        m_context->entities->at(selectedEntity).e_color = m_context->entities->at(selectedEntity).ImVecToColor(m_context->entities->at(selectedEntity).e_colorValues);
+
+        ImGui::Text("Entity Position");
+        ImGui::Text("X");
+        ImGui::SameLine();
+        positionChanged |= ImGui::InputFloat("##EntityPosXInput", &m_context->entities->at(selectedEntity).e_position[0], 0.5f);
+        ImGui::Text("Y");
+        ImGui::SameLine();
+        positionChanged |= ImGui::InputFloat("##EntityPosYInput", &m_context->entities->at(selectedEntity).e_position[1], 0.5f);
+        ImGui::Text("Z");
+        ImGui::SameLine();
+        positionChanged |= ImGui::InputFloat("##EntityPosZInput", &m_context->entities->at(selectedEntity).e_position[2], 0.5f);
+
+        if (positionChanged) {
+            positionChanged = false;
+            m_context->entities->at(selectedEntity).e_boundingBox = m_context->entities->at(selectedEntity).GenBoundingBox(*m_context->entities->at(selectedEntity).e_mesh, m_context->entities->at(selectedEntity).e_position);
+        }
+    }
     // SCENE SETTINGS
     ImGui::Dummy(ImVec2(0, 5));
     ImGui::SetWindowFontScale(1.5f);
@@ -276,7 +306,7 @@ void Scene::draw() {
 
     ImGui::Dummy(ImVec2(0, 2.5f));
     ImGui::Text("Void Color");
-    ImGui::ColorEdit3("##VoidColorEdit", (float*)&voidCol);
+    ImGui::ColorEdit3("##VoidColorEdit", reinterpret_cast<float *>(&voidCol));
 
     // ADVANCED SETTINGS
     ImGui::Dummy(ImVec2(0, 2.5f));
@@ -310,6 +340,13 @@ void Scene::draw() {
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Light Direction");
             dirChanged = ImGui::SliderFloat3("##SolidLightDirection", lightDirection, -1.0f, 1.0f);
+        }
+        if (ImGui::CollapsingHeader("Color Tweaking")) {
+            ImGui::Text("On Selection Mesh Color");
+            ImGui::ColorEdit3("##OnSelectionMeshColorEdit", reinterpret_cast<float *>(&onSelectionMeshColor));
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("On Selection Wires Color");
+            ImGui::ColorEdit3("##OnSelectionWiresColorEdit", reinterpret_cast<float *>(&onSelectionWiresColor));
         }
 
         ImGui::EndPopup();
