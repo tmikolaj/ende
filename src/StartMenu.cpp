@@ -41,9 +41,11 @@ void StartMenu::draw() {
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 180));
     ImGui::SetCursorPosY(25.0f);
 
+    ImGui::SetWindowFontScale(1.1f);
     if (ImGui::Button("Create New Project", ImVec2(160, 40))) {
         ImGui::OpenPopup("Create Project");
     }
+    ImGui::SetWindowFontScale(1.0f);
 
     if (ImGui::IsPopupOpen("Create Project")) {
         ImVec2 center = ImVec2((800 - 300) * 0.5f, (600 - 200) * 0.5f);
