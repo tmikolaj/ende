@@ -27,11 +27,11 @@ struct Entity {
         e_model = _model;
         e_mesh = &e_model.meshes[0];
 
-        e_boundingBox = GenBoundingBox(*e_mesh);
-
         e_position[0] = 0.0f;
         e_position[1] = 0.0f;
         e_position[2] = 0.0f;
+
+        e_boundingBox = GenBoundingBox(*e_mesh, e_position);
 
         auto rawVerts = static_cast<float*>(e_mesh->vertices);
         e_vertices.assign(rawVerts, rawVerts + e_mesh->vertexCount * 3);
@@ -57,31 +57,36 @@ struct Entity {
         };
     }
 
-    BoundingBox GenBoundingBox(const Mesh& mesh) {
+    BoundingBox GenBoundingBox(const Mesh& mesh, float pos[3]) {
         BoundingBox box = { 0 };
 
         if (mesh.vertexCount == 0 || mesh.vertices == nullptr) return box;
 
         float* vertices = mesh.vertices;
 
-        Vector3 min = { vertices[0], vertices[1], vertices[2] };
-        Vector3 max = min;
+        Vector3 first = {
+            vertices[0] + pos[0],
+            vertices[1] + pos[1],
+            vertices[2] + pos[2]
+        };
+        box.min = first;
+        box.max = first;
 
         for (int i = 1; i < mesh.vertexCount; i++) {
-            int index = i * 3;
-            float x = vertices[index + 0];
-            float y = vertices[index + 1];
-            float z = vertices[index + 2];
+            Vector3 v = {
+                vertices[i * 3 + 0] + pos[0],
+                vertices[i * 3 + 1] + pos[1],
+                vertices[i * 3 + 2] + pos[2]
+            };
 
-            if (x < min.x) min.x = x;
-            if (y < min.y) min.y = y;
-            if (z < min.z) min.z = z;
-            if (x > max.x) max.x = x;
-            if (y > max.y) max.y = y;
-            if (z > max.z) max.z = z;
+            if (v.x < box.min.x) box.min.x = v.x;
+            if (v.y < box.min.y) box.min.y = v.y;
+            if (v.z < box.min.z) box.min.z = v.z;
+            if (v.x > box.max.x) box.max.x = v.x;
+            if (v.y > box.max.y) box.max.y = v.y;
+            if (v.z > box.max.z) box.max.z = v.z;
         }
-        box.min = min;
-        box.max = max;
+
         return box;
     }
     void UpdateBuffers() {
