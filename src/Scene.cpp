@@ -298,7 +298,6 @@ void Scene::draw() {
     if (ImGui::BeginPopupModal("RenameEntity", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("New Name");
         ImGui::SameLine();
-        ImGui::SetKeyboardFocusHere();
         bool renameEnterPressed = ImGui::InputText("##RenameInput", renameBuffer, sizeof(renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         if (ImGui::Button("Cancel")) {
             ImGui::CloseCurrentPopup();

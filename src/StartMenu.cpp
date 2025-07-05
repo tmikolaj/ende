@@ -1,5 +1,4 @@
 #include "StartMenu.hpp"
-
 #include "Scene.hpp"
 
 StartMenu::StartMenu(std::shared_ptr<Context>& context) :
@@ -47,48 +46,40 @@ void StartMenu::draw() {
     }
     ImGui::SetWindowFontScale(1.0f);
 
-    if (ImGui::IsPopupOpen("Create Project")) {
-        ImVec2 center = ImVec2((800 - 300) * 0.5f, (600 - 200) * 0.5f);
-        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize({300, 120});
-    }
-
-    if (ImGui::BeginPopupModal("Create Project", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+    if (ImGui::BeginPopupModal("Create Project", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::SetWindowFontScale(1.6f);
         ImGui::Text("Create New Project");
-        ImGui::Dummy({50, 20});
-
         ImGui::SetWindowFontScale(1.0f);
-        ImGui::PushItemWidth(180);
-        ImGui::Text("Project Name");
-        ImGui::SameLine();
-        ImGui::SetKeyboardFocusHere();
-        bool enterPressed = ImGui::InputText("##", nameBuffer, IM_ARRAYSIZE(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-        ImGui::PopItemWidth();
 
-        ImGui::SetCursorPosX(270.0f);
-        ImGui::SetCursorPosY(10.0f);
-        if (ImGui::Button("X", {20, 20})) {
+        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(50, 5));
+        ImGui::SameLine();
+        if (ImGui::Button("X")) {
             showEmptyNameWarning = false;
             ImGui::CloseCurrentPopup();
         }
-        ImGui::SetCursorPosX(10.0f);
-        ImGui::SetCursorPosY(85.0f);
+        ImGui::Dummy(ImVec2(10, 5));
+        ImGui::Text("Project Name");
+        bool enterPressed = ImGui::InputText("##Project Name", nameBuffer, IM_ARRAYSIZE(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::Dummy(ImVec2(0, 5));
+
         if (ImGui::Button("Create") || enterPressed) {
             if (nameBuffer[0] == '\0') {
                 showEmptyNameWarning = true;
             } else {
+                ImGui::CloseCurrentPopup();
                 showEmptyNameWarning = false;
-                projectName = nameBuffer;
-                m_context->states->setWindowState(RESTART);
                 m_context->states->add(std::make_unique<Scene>(m_context), true);
+                m_context->states->setWindowState(RESTART);
             }
         }
+        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(2.5f, 0));
+        ImGui::SameLine();
         if (showEmptyNameWarning) {
-            ImGui::SetCursorPosX(80.0f);
-            ImGui::SetCursorPosY(87.0f);
-            ImGui::TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "Project name cannot be empty!");
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Project Name Cannot Be Empty!");
         }
+
         ImGui::EndPopup();
     }
 
