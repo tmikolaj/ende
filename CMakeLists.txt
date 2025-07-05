@@ -30,6 +30,8 @@ add_executable(3DProdGen
         src/StateManager.cpp
         src/Scene.cpp
         src/Scene.hpp
+        src/BasicPerlin.cpp
+        src/BasicPerlin.hpp
 )
 
 target_link_libraries(3DProdGen
