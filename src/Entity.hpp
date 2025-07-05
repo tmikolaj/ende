@@ -2,6 +2,8 @@
 #define ENTITY_HPP
 
 #include <vector>
+#include <external/glm/geometric.hpp>
+#include <external/glm/vec3.hpp>
 #include "external/imgui/imgui.h"
 #include "raylib.h"
 
@@ -107,9 +109,45 @@ struct Entity {
 
         return box;
     }
+
     void UpdateBuffers() {
+        RecalcNormals(e_vertices, e_indices, e_normals);
         UpdateMeshBuffer(*e_mesh, 0, e_vertices.data(), e_vertices.size() * sizeof(float), 0);
         UpdateMeshBuffer(*e_mesh, 2, e_normals.data(), e_normals.size() * sizeof(float), 0);
+    }
+
+    void RecalcNormals(std::vector<float>& vertices, std::vector<unsigned short>& indices, std::vector<float>& normals) {
+        normals.assign(vertices.size(), 0.0f);
+
+        for (size_t i = 0; i < indices.size(); i += 3) {
+            unsigned short i0 = indices[i];
+            unsigned short i1 = indices[i + 1];
+            unsigned short i2 = indices[i + 2];
+
+            glm::vec3 v0(vertices[i0 * 3], vertices[i0 * 3 + 1], vertices[i0 * 3 + 2]);
+            glm::vec3 v1(vertices[i1 * 3], vertices[i1 * 3 + 1], vertices[i1 * 3 + 2]);
+            glm::vec3 v2(vertices[i2 * 3], vertices[i2 * 3 + 1], vertices[i2 * 3 + 2]);
+
+            glm::vec3 edge1 = v1 - v0;
+            glm::vec3 edge2 = v2 - v0;
+
+            glm::vec3 normal = glm::normalize(glm::cross(edge2, edge1));
+
+            for (unsigned int index : {i0, i1, i2}) {
+                normals[index * 3] = normal.x;
+                normals[index * 3 + 1] = normal.y;
+                normals[index * 3 + 2] = normal.z;
+            }
+        }
+
+        for (size_t i = 0; i < normals.size(); i += 3) {
+            glm::vec3 n(normals[i], normals[i + 1], normals[i + 2]);
+            n = glm::normalize(n);
+
+            normals[i] += n.x;
+            normals[i + 1] += n.y;
+            normals[i + 2] += n.z;
+        }
     }
 };
 
