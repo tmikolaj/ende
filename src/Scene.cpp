@@ -416,7 +416,6 @@ void Scene::draw() {
         ImGui::SetWindowFontScale(2.0f);
         ImGui::Text("Add Entity");
         ImGui::SetWindowFontScale(1.0f);
-        ImGui::SameLine();
 
         ImGui::Dummy(ImVec2(0, 5));
         const char* entityTypes[] = { "", "Terrain" };
@@ -429,6 +428,8 @@ void Scene::draw() {
         static bool pushed = false;
 
         if (selectedEntityType == 0) {
+            if (pushed) m_context->entities->pop_back();
+            pushed = false;
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Select Entity Type To View Additional Settings Here!");
         } else if (selectedEntityType == 1) {
             static float width = 10;
