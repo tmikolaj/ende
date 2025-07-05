@@ -5,7 +5,7 @@ context(std::make_shared<Context>()) {
 
 }
 void Program::init() {
-    InitWindow(800, 600, "3DProdGen");
+    InitWindow(800, 600, "3DProcGen");
     context->states->setWindowState(NONE);
     context->states->add(std::make_unique<StartMenu>(context));
     context->states->processState();
