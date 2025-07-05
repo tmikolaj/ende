@@ -1,9 +1,16 @@
 #ifndef ENTITY_HPP
 #define ENTITY_HPP
 
-#include "external/imgui/imgui.h"
 #include <vector>
+#include "external/imgui/imgui.h"
 #include "raylib.h"
+
+struct TerrainType {
+    float amplitude;
+    float frequency;
+
+    TerrainType(float amp, float freq) : amplitude(amp), frequency(freq) {}
+};
 
 struct Entity {
     Model e_model;
@@ -21,8 +28,17 @@ struct Entity {
     std::vector<float> e_normals;
     std::vector<unsigned short> e_indices;
 
-    Entity(Model _model, const std::string& _name) {
+    const char* e_type;
+
+    TerrainType* e_terrain = nullptr;
+
+    Entity(Model _model, const std::string& _name, const char* _type) {
         e_name = _name;
+        e_type = _type;
+
+        if (e_type == "terrain") {
+            e_terrain = new TerrainType(0.1f, 0.01f);
+        }
 
         e_model = _model;
         e_mesh = &e_model.meshes[0];
@@ -46,7 +62,9 @@ struct Entity {
         e_visible = true;
     }
 
-    Entity(Mesh _mesh, const std::string& _name) : Entity(LoadModelFromMesh(_mesh), _name) {}
+    Entity(Mesh _mesh, const std::string& _name, const char* _type) : Entity(LoadModelFromMesh(_mesh), _name, _type) {}
+
+    ~Entity() = default;
 
     Color ImVecToColor(const ImVec4& toConvert) {
         return (Color){
