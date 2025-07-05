@@ -4,6 +4,7 @@
 #include "Context.hpp"
 #include "external/rlImGui/rlImGui.h"
 #include "external/imgui/imgui.h"
+#include "BasicPerlin.hpp"
 // #include "rlights.h"
 #include "external/glm/glm.hpp"
 
@@ -39,6 +40,8 @@ private:
 
     // collision (to check if the entity was hit)
     Ray ray;
+
+    BasicPerlin perlin;
 
     // imgui variables
     // rename
