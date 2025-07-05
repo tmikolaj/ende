@@ -33,7 +33,7 @@ void StartMenu::draw() {
     ImGui::SetWindowFontScale(3.5f);
     ImGui::SetCursorPosX(30.0f);
     ImGui::SetCursorPosY(20.0f);
-    ImGui::TextWrapped("3DProdGen - Start Menu");
+    ImGui::TextWrapped("3DProcGen - Start Menu");
     ImGui::Dummy({0, 20});
     ImGui::Separator();
 
