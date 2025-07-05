@@ -540,7 +540,7 @@ void Scene::draw() {
         ImGui::EndPopup();
     }
 
-    if (shouldUpdateBuffers) {
+    if (shouldUpdateBuffers && (selectedEntity >= 0 && selectedEntity < m_context->entities->size())) {
         m_context->entities->at(selectedEntity).UpdateBuffers();
     }
 
