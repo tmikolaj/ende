@@ -41,7 +41,7 @@ void Scene::init() {
     lightColor[0] = 1.0f;
     lightColor[1] = 1.0f;
     lightColor[2] = 1.0f;
-    lightDir = glm::normalize(glm::vec3{-1.0f, 1.0f, -1.0f});
+    lightDir = glm::normalize(glm::vec3{0.256f, -0.333f, 0.881f});
     lightDirection[0] = lightDir.x;
     lightDirection[1] = lightDir.y;
     lightDirection[2] = lightDir.z;
@@ -78,6 +78,10 @@ void Scene::init() {
 
     SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
     SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
+
+    for (auto& e : *m_context->entities) {
+        e.UpdateBuffers();
+    }
 }
 
 void Scene::process() {
@@ -366,7 +370,7 @@ void Scene::draw() {
 
             m_context->entities->at(selectedEntity).UpdateBuffers();
             ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
-            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, 0.1f, 20.0f);
+            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
         }
     }
     // SCENE SETTINGS
@@ -451,7 +455,7 @@ void Scene::draw() {
 
             m_context->entities->at(selectedEntity).UpdateBuffers();
             ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
-            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, 0.1f, 20.0f);
+            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
             shouldUpdate |= ImGui::InputFloat("Width", &width);
             shouldUpdate |= ImGui::InputFloat("Length", &length);
             shouldUpdate |= ImGui::InputFloat("Resolution X", &resX);
