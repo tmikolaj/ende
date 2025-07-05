@@ -26,7 +26,8 @@ void Scene::init() {
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    m_context->entities->push_back(Entity(GenMeshCube(1.0f, 1.0f, 1.0f), "cube"));
+    m_context->entities->push_back(Entity(GenMeshCube(1.0f, 1.0f, 1.0f), "cube", "none"));
+    m_context->entities->push_back(Entity(GenMeshPlane(10, 10, 20, 20), "plane", "terrain"));
 
     // render/shader variables init
     selectedEntity = -1;
@@ -296,7 +297,7 @@ void Scene::draw() {
         if (ImGui::Button("Cancel")) {
             ImGui::CloseCurrentPopup();
         }
-        bool showEmptyRenameWarning;
+        static bool showEmptyRenameWarning = false;
         ImGui::SameLine();
         if (ImGui::Button("OK") || renameEnterPressed) {
             if (selectedEntity >= 0 && selectedEntity < m_context->entities->size()) {
@@ -351,6 +352,22 @@ void Scene::draw() {
         ImGui::BeginDisabled(toggleWireframe);
         ImGui::Checkbox("Show Wires", &showWires);
         ImGui::EndDisabled();
+
+        if (m_context->entities->at(selectedEntity).e_type == "terrain") {
+            perlin.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
+            perlin.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
+
+            int vertexCount = (int)m_context->entities->at(selectedEntity).e_vertices.size() / 3;
+            for (int i = 0; i < vertexCount; i++) {
+                float x = m_context->entities->at(selectedEntity).e_vertices[i * 3];
+                float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
+                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.get(x, z);
+            }
+
+            m_context->entities->at(selectedEntity).UpdateBuffers();
+            ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
+            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, 0.1f, 20.0f);
+        }
     }
     // SCENE SETTINGS
     ImGui::Dummy(ImVec2(0, 5));
@@ -378,11 +395,92 @@ void Scene::draw() {
     ImGui::Text("Void Color");
     ImGui::ColorEdit3("##VoidColorEdit", reinterpret_cast<float *>(&voidCol));
 
+    // ENTITY ADD
+    ImGui::Dummy(ImVec2(0, 5));
+    ImGui::SetCursorPos(ImVec2(10, mh - 100));
+    ImGui::SetWindowFontScale(1.1f);
+    if (ImGui::Button("Add Entity", ImVec2(380, 40))) {
+        ImGui::OpenPopup("Add Entity");
+    }
+    if (ImGui::BeginPopupModal("Add Entity", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+        ImGui::SetWindowFontScale(2.0f);
+        ImGui::Text("Add Entity");
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::SameLine();
+
+        ImGui::Dummy(ImVec2(0, 5));
+        static int selectedEntityType = 0;
+        const char* entityTypes[] = { "", "Terrain" };
+        ImGui::Combo("Choose Entity Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
+
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::Separator();
+        ImGui::Dummy(ImVec2(0, 5));
+
+        if (selectedEntityType == 0) {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Select Entity Type To View Additional Settings Here!");
+        } else if (selectedEntityType == 1) {
+            static float width = 10;
+            static float length = 10;
+            static float resX = 20;
+            static float resZ = 20;
+            static bool pushed = false;
+            static bool shouldUpdate = false;
+            if (!pushed || shouldUpdate) {
+                if (shouldUpdate) m_context->entities->pop_back();
+                shouldUpdate = false;
+                m_context->entities->push_back(Entity(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
+                pushed = true;
+            }
+            selectedEntity = m_context->entities->size() - 1;
+
+            ImGui::SetWindowFontScale(1.1f);
+            ImGui::Text("Terrain Settings");
+            ImGui::SetWindowFontScale(1.0f);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            perlin.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
+            perlin.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
+
+            int vertexCount = (int)m_context->entities->at(selectedEntity).e_vertices.size() / 3;
+            for (int i = 0; i < vertexCount; i++) {
+                float x = m_context->entities->at(selectedEntity).e_vertices[i * 3];
+                float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
+                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.get(x, z);
+            }
+
+            m_context->entities->at(selectedEntity).UpdateBuffers();
+            ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
+            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, 0.1f, 20.0f);
+            shouldUpdate |= ImGui::InputFloat("Width", &width);
+            shouldUpdate |= ImGui::InputFloat("Length", &length);
+            shouldUpdate |= ImGui::InputFloat("Resolution X", &resX);
+            shouldUpdate |= ImGui::InputFloat("Resolution Z", &resZ);
+        }
+        ImGui::Dummy(ImVec2(0, 5));
+        if (selectedEntityType != 0 && ImGui::Button("Create")) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SetCursorPos(ImVec2(350, 10));
+        if (ImGui::Button("X")) {
+            if (selectedEntityType != 0) {
+                m_context->entities->pop_back();
+                selectedEntity = -1;
+            }
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+
     // ADVANCED SETTINGS
     ImGui::SetCursorPos(ImVec2(10, mh - 50));
+    ImGui::SetWindowFontScale(1.1f);
     if (ImGui::Button("Advanced Settings", ImVec2(380, 40))) {
         ImGui::OpenPopup("AdvancedSettingsPopup");
     }
+    ImGui::SetWindowFontScale(1.0f);
     if (ImGui::BeginPopupModal("AdvancedSettingsPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
         ImGui::SetWindowFontScale(2.0f);
         ImGui::Text("Advanced Settings");
@@ -418,7 +516,7 @@ void Scene::draw() {
             ImGui::Text("On Selection Wires Color");
             ImGui::ColorEdit3("##OnSelectionWiresColorEdit", reinterpret_cast<float *>(&onSelectionWiresColor));
         }
-        if (ImGui::CollapsingHeader("Program settings")) {
+        if (ImGui::CollapsingHeader("Advanced Scene Settings")) {
             ImGui::Checkbox("Strict Search", &useStrictSearch);
         }
 
