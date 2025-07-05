@@ -208,6 +208,8 @@ void Scene::draw() {
     static bool inputActive = false;
     static bool shouldFocus = false;
 
+    static bool shouldUpdateBuffers = false;
+
     ImGui::PushItemWidth(380);
 
     ImGui::SetWindowFontScale(1.2f);
@@ -368,9 +370,11 @@ void Scene::draw() {
                 m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.get(x, z);
             }
 
-            m_context->entities->at(selectedEntity).UpdateBuffers();
-            ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
-            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::PushItemWidth(300);
+            shouldUpdateBuffers |= ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
+            shouldUpdateBuffers |= ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+            ImGui::PopItemWidth();
         }
     }
     // SCENE SETTINGS
@@ -403,8 +407,11 @@ void Scene::draw() {
     ImGui::Dummy(ImVec2(0, 5));
     ImGui::SetCursorPos(ImVec2(10, mh - 100));
     ImGui::SetWindowFontScale(1.1f);
+    static int selectedEntityType = 0;
     if (ImGui::Button("Add Entity", ImVec2(380, 40))) {
         ImGui::OpenPopup("Add Entity");
+        selectedEntityType = 0;
+
     }
     if (ImGui::BeginPopupModal("Add Entity", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
         ImGui::SetWindowFontScale(2.0f);
@@ -413,13 +420,14 @@ void Scene::draw() {
         ImGui::SameLine();
 
         ImGui::Dummy(ImVec2(0, 5));
-        static int selectedEntityType = 0;
         const char* entityTypes[] = { "", "Terrain" };
         ImGui::Combo("Choose Entity Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
 
         ImGui::Dummy(ImVec2(0, 5));
         ImGui::Separator();
         ImGui::Dummy(ImVec2(0, 5));
+
+        static bool pushed = false;
 
         if (selectedEntityType == 0) {
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Select Entity Type To View Additional Settings Here!");
@@ -428,8 +436,11 @@ void Scene::draw() {
             static float length = 10;
             static float resX = 20;
             static float resZ = 20;
-            static bool pushed = false;
             static bool shouldUpdate = false;
+            if (!pushed) {
+                width = length = 10;
+                resX = resZ = 20;
+            }
             if (!pushed || shouldUpdate) {
                 if (shouldUpdate) m_context->entities->pop_back();
                 shouldUpdate = false;
@@ -454,8 +465,10 @@ void Scene::draw() {
             }
 
             m_context->entities->at(selectedEntity).UpdateBuffers();
-            ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
-            ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+            ImGui::PushItemWidth(300);
+            shouldUpdateBuffers |= ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
+            shouldUpdateBuffers |= ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+            ImGui::PopItemWidth();
             shouldUpdate |= ImGui::InputFloat("Width", &width);
             shouldUpdate |= ImGui::InputFloat("Length", &length);
             shouldUpdate |= ImGui::InputFloat("Resolution X", &resX);
@@ -463,6 +476,7 @@ void Scene::draw() {
         }
         ImGui::Dummy(ImVec2(0, 5));
         if (selectedEntityType != 0 && ImGui::Button("Create")) {
+            pushed = false;
             ImGui::CloseCurrentPopup();
         }
 
@@ -525,6 +539,10 @@ void Scene::draw() {
         }
 
         ImGui::EndPopup();
+    }
+
+    if (shouldUpdateBuffers) {
+        m_context->entities->at(selectedEntity).UpdateBuffers();
     }
 
     ImGui::End();
