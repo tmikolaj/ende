@@ -4,7 +4,7 @@
 #include "Context.hpp"
 #include "external/rlImGui/rlImGui.h"
 #include "external/imgui/imgui.h"
-#include "BasicPerlin.hpp"
+#include "Noise.hpp"
 // #include "rlights.h"
 #include "external/glm/glm.hpp"
 
@@ -41,7 +41,9 @@ private:
     // collision (to check if the entity was hit)
     Ray ray;
 
-    BasicPerlin perlin;
+    Noise perlin;
+
+    bool shouldOpenContextPopup;
 
     // imgui variables
     // rename
@@ -78,6 +80,7 @@ public:
     void clean() override;
 
     Color ImVecToColor(ImVec4 _color);
+    void HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_context, const Camera3D& _camera, const std::shared_ptr<Context>& _m_context, Ray _ray);
 };
 
 #endif //SCENE_HPP
