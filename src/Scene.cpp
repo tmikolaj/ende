@@ -77,6 +77,7 @@ void Scene::init() {
     Ray ray = { 0 };
 
     shouldOpenContextPopup = false;
+    hoverDelay = 1.0f;
 
     SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
     SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
@@ -363,10 +364,39 @@ void Scene::draw() {
                 m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
             }
 
+            static float startHoverFreq = 0.0f;
+            static float startHoverAmp = 0.0f;
+
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::PushItemWidth(300);
             shouldUpdateBuffers |= ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
+
+            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                if (startHoverFreq == 0.0f) startHoverFreq = ImGui::GetTime();
+
+                if (ImGui::GetTime() - startHoverFreq > hoverDelay) {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Frequency controls how fast the waves change");
+                    ImGui::EndTooltip();
+                }
+            } else {
+                startHoverFreq = 0.0f;
+            }
+
             shouldUpdateBuffers |= ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+
+            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                if (startHoverAmp == 0.0f) startHoverAmp = ImGui::GetTime();
+
+                if (ImGui::GetTime() - startHoverAmp > hoverDelay) {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Amplitude controls how tall the bumps are");
+                    ImGui::EndTooltip();
+                }
+            } else {
+                startHoverAmp = 0.0f;
+            }
+
             ImGui::PopItemWidth();
         }
     }
@@ -462,13 +492,40 @@ void Scene::draw() {
             m_context->entities->at(selectedEntity).UpdateBuffers();
             ImGui::PushItemWidth(340);
 
+            static float hoverStartFreq = 0.0f;
+            static float hoverStartAmp = 0.0f;
+
             ImGui::Dummy(ImVec2(0, 5));
             ImGui::Text("Frequency");
             shouldUpdateBuffers |= ImGui::SliderFloat("##Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
 
+            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                if (hoverStartFreq == 0.0f) hoverStartFreq = ImGui::GetTime();
+
+                if (ImGui::GetTime() - hoverStartFreq > hoverDelay) {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Frequency controls how fast the waves change");
+                    ImGui::EndTooltip();
+                }
+            } else {
+                hoverStartFreq = 0.0f;
+            }
+
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Amplitude");
             shouldUpdateBuffers |= ImGui::SliderFloat("##Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+
+            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                if (hoverStartAmp == 0.0f) hoverStartAmp = ImGui::GetTime();
+
+                if (ImGui::GetTime() - hoverStartAmp > hoverDelay) {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Amplitude controls how tall the bumps are");
+                    ImGui::EndTooltip();
+                }
+            } else {
+                hoverStartAmp = 0.0f;
+            }
             ImGui::PopItemWidth();
 
             ImGui::Dummy(ImVec2(0, 2.5f));

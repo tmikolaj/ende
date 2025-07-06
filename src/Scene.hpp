@@ -44,6 +44,7 @@ private:
     Noise perlin;
 
     bool shouldOpenContextPopup;
+    float hoverDelay;
 
     // imgui variables
     // rename
