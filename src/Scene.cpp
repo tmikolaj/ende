@@ -76,6 +76,8 @@ void Scene::init() {
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
 
+    shouldOpenContextPopup = false;
+
     SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
     SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
 
@@ -96,22 +98,13 @@ void Scene::process() {
         camera.position = camPos;
     }
 
-    ray = GetMouseRay(GetMousePosition(), camera);
-    if (!ImGui::GetIO().WantCaptureMouse && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        selectedEntity = -1;
-        float closestHit = FLT_MAX;
-
-        for (int i = 0; i < m_context->entities->size(); i++) {
-            if (!m_context->entities->at(i).e_visible) continue;
-
-            RayCollision hit = GetRayCollisionBox(ray, m_context->entities->at(i).e_boundingBox);
-
-            if (hit.hit && hit.distance < closestHit) {
-                closestHit = hit.distance;
-                selectedEntity = i;
-            }
-        }
+    int btn;
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        btn = MOUSE_BUTTON_LEFT;
+    } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+        btn = MOUSE_BUTTON_RIGHT;
     }
+    HandleMouseSelection(btn, selectedEntity, shouldOpenContextPopup, camera, m_context, ray);
 
     if (IsKeyPressed(KEY_F1)) {
 
@@ -261,8 +254,9 @@ void Scene::draw() {
             selectedEntity = i;
         }
 
-        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-            selectedEntity = i;
+        if ((ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) || shouldOpenContextPopup) {
+            if (!shouldOpenContextPopup) selectedEntity = i;
+            shouldOpenContextPopup = false;
             ImGui::OpenPopup("Context");
         }
     }
@@ -366,7 +360,7 @@ void Scene::draw() {
             for (int i = 0; i < vertexCount; i++) {
                 float x = m_context->entities->at(selectedEntity).e_vertices[i * 3];
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
-                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.get(x, z);
+                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
             }
 
             ImGui::Dummy(ImVec2(0, 2.5f));
@@ -462,7 +456,7 @@ void Scene::draw() {
             for (int i = 0; i < vertexCount; i++) {
                 float x = m_context->entities->at(selectedEntity).e_vertices[i * 3];
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
-                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.get(x, z);
+                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
             }
 
             m_context->entities->at(selectedEntity).UpdateBuffers();
@@ -598,4 +592,26 @@ Color Scene::ImVecToColor(ImVec4 _color) {
         static_cast<unsigned char>(_color.z * 255.0f),
         255
     };
+}
+
+void Scene::HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_context, const Camera3D& _camera, const std::shared_ptr<Context>& _m_context, Ray _ray) {
+    if (ImGui::GetIO().WantCaptureMouse || !IsMouseButtonPressed(btn)) return;
+
+    _ray = GetMouseRay(GetMousePosition(), _camera);
+    selectedEntity = -1;
+    float closestHit = FLT_MAX;
+
+    for (int i = 0; i < _m_context->entities->size(); i++) {
+        if (!_m_context->entities->at(i).e_visible) continue;
+
+        RayCollision hit = GetRayCollisionBox(_ray, _m_context->entities->at(i).e_boundingBox);
+
+        if (hit.hit && hit.distance < closestHit) {
+            closestHit = hit.distance;
+            selectedEntity = i;
+        }
+    }
+    if (btn == MOUSE_BUTTON_RIGHT && (selectedEntity >= 0 && selectedEntity < _m_context->entities->size())) {
+        e_context = true;
+    }
 }
