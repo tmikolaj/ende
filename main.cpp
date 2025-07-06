@@ -9,16 +9,17 @@
 #include "external/glm/glm.hpp"
 #include "external/glm/gtc/type_ptr.hpp"
 #include "src/Entity.hpp"
+#include "src/Program.hpp"
 
 std::vector<float> customVerts;
 std::vector<float> customNormals;
 std::vector<unsigned short> customIndices;
 
 enum currentViewMode {
-    SOLID = 0,
-    M_PREVIEW = 1,
-    RENDER = 2,
-    WIREFRAME = 3
+    mSOLID = 0,
+    mM_PREVIEW = 1,
+    mRENDER = 2,
+    mWIREFRAME = 3
 };
 
 Color ImVecToColor(ImVec4 toConvert);
@@ -27,6 +28,11 @@ Mesh GenerateGridMesh(int gridSize, float tileSize);
 Matrix IdentityMatrix();
 
 int main() {
+    Program program;
+    program.init();
+    program.run();
+    return 0;
+
     InitWindow(1920, 1080, "Grid mesh");
     rlImGuiSetup(true);
 
@@ -53,8 +59,8 @@ int main() {
     auto rawIndices = static_cast<unsigned short*>(gridMesh.indices);
     customIndices.assign(rawIndices, rawIndices + gridMesh.triangleCount * 3);
 
-    Entity entity(GenerateGridMesh(10, 1.0f), "plane");
-    Entity ecube(GenMeshCube(2.0f, 2.0f, 2.0f), "cube");
+    Entity entity(GenerateGridMesh(10, 1.0f), "plane", "terrain");
+    Entity ecube(GenMeshCube(2.0f, 2.0f, 2.0f), "cube", "none");
 
     std::vector<Entity> entities = { entity, ecube };
     int selectedEntity = -1;
@@ -83,7 +89,7 @@ int main() {
 
     std::string curr_m = "SOLID";
     bool showWires = false;
-    int mode = SOLID;
+    int mode = mSOLID;
 
     // for imgui (to change the values of these variables)
     int uiGridSize = 10;
@@ -130,29 +136,17 @@ int main() {
             }
         }
 
-        int x = uiGridSize / 2;
-        int z = uiGridSize / 2;
-        int i = (z * (uiGridSize + 1) + x) * 3;
-
-        if (IsKeyDown(KEY_W)) {
-            customVerts[i + 1] += 0.01f;
-            std::cout << customVerts[i + 1] << '\n';
-        } else if (IsKeyDown(KEY_S)) {
-            customVerts[i + 1] -= 0.01f;
-            std::cout << customVerts[i + 1] << '\n';
-        }
-
         if (IsKeyPressed(KEY_F1)) {
-            mode = SOLID;
+            mode = mSOLID;
             curr_m = "SOLID";
         } else if (IsKeyPressed(KEY_F2)) {
-            mode = M_PREVIEW;
+            mode = mM_PREVIEW;
             curr_m = "MATERIAL PREVIEW";
         } else if (IsKeyPressed(KEY_F3)) {
-            mode = RENDER;
+            mode = mRENDER;
             curr_m = "RENDER";
         } else if (IsKeyPressed(KEY_F4)) {
-            mode = WIREFRAME;
+            mode = mWIREFRAME;
             curr_m = "WIREFRAME";
         }
 
@@ -161,12 +155,12 @@ int main() {
         UpdateMeshBuffer(*entity.e_mesh, 2, customNormals.data(), customNormals.size() * sizeof(float), 0);
         //UpdateMeshBuffer(mesh, 3, customColors.data(), customColors.size() * sizeof(unsigned char), 0);
 
-        if (mode == SOLID) {
+        if (mode == mSOLID) {
             SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
             SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
             entity.e_model.materials[0].shader = solidShader;
             ecube.e_model.materials[0].shader = solidShader;
-        } else if (mode == M_PREVIEW || mode == WIREFRAME) {
+        } else if (mode == mM_PREVIEW || mode == mWIREFRAME) {
             entity.e_model.materials[0].shader = materialPreviewsh;
             ecube.e_model.materials[0].shader = materialPreviewsh;
         } else {
@@ -185,11 +179,11 @@ int main() {
         for (int i = 0; i < static_cast<int>(entities.size()); i++) {
             Vector3 epos(entities[i].e_position[0], entities[i].e_position[1], entities[i].e_position[2]);
             if (selectedEntity == i) {
-                if (mode != WIREFRAME) DrawModel(entities[i].e_model, epos, 1.0f, entities[i].ImVecToColor(onSelectionMeshColor));
-                if (mode != SOLID) DrawModelWires(entities[i].e_model, epos, 1.0f, entities[i].ImVecToColor(onSelectionWiresColor));
+                if (mode != mWIREFRAME) DrawModel(entities[i].e_model, epos, 1.0f, entities[i].ImVecToColor(onSelectionMeshColor));
+                if (mode != mSOLID) DrawModelWires(entities[i].e_model, epos, 1.0f, entities[i].ImVecToColor(onSelectionWiresColor));
             } else {
-                if (mode != WIREFRAME) DrawModel(entities[i].e_model, epos, 1.0f, entities[i].e_color);
-                if (showWires || mode == WIREFRAME) DrawModelWires(entities[i].e_model, epos, 1.0f, RED);
+                if (mode != mWIREFRAME) DrawModel(entities[i].e_model, epos, 1.0f, entities[i].e_color);
+                if (showWires || mode == mWIREFRAME) DrawModelWires(entities[i].e_model, epos, 1.0f, RED);
             }
         }
 
