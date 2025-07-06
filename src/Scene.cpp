@@ -419,7 +419,8 @@ void Scene::draw() {
 
         ImGui::Dummy(ImVec2(0, 5));
         const char* entityTypes[] = { "", "Terrain" };
-        ImGui::Combo("Choose Entity Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
+        ImGui::Text("Choose Entity Type");
+        ImGui::Combo("##Choose Entity Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
 
         ImGui::Dummy(ImVec2(0, 5));
         ImGui::Separator();
@@ -465,14 +466,44 @@ void Scene::draw() {
             }
 
             m_context->entities->at(selectedEntity).UpdateBuffers();
-            ImGui::PushItemWidth(300);
-            shouldUpdateBuffers |= ImGui::SliderFloat("Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
-            shouldUpdateBuffers |= ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+            ImGui::PushItemWidth(340);
+
+            ImGui::Dummy(ImVec2(0, 5));
+            ImGui::Text("Frequency");
+            shouldUpdateBuffers |= ImGui::SliderFloat("##Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Amplitude");
+            shouldUpdateBuffers |= ImGui::SliderFloat("##Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
             ImGui::PopItemWidth();
-            shouldUpdate |= ImGui::InputFloat("Width", &width);
-            shouldUpdate |= ImGui::InputFloat("Length", &length);
-            shouldUpdate |= ImGui::InputFloat("Resolution X", &resX);
-            shouldUpdate |= ImGui::InputFloat("Resolution Z", &resZ);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Width");
+            ImGui::SameLine();
+
+            ImGui::Dummy(ImVec2(125, 0));
+            ImGui::SameLine();
+            ImGui::Text("Resolution X");
+
+            ImGui::PushItemWidth(165);
+            shouldUpdate |= ImGui::InputFloat("##Width", &width);
+
+            ImGui::SameLine();
+            shouldUpdate |= ImGui::InputFloat("##Resolution X", &resX);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Length");
+            ImGui::SameLine();
+
+            ImGui::Dummy(ImVec2(125, 0));
+            ImGui::SameLine();
+            ImGui::Text("Resolution Z");
+
+            shouldUpdate |= ImGui::InputFloat("##Length", &length);
+
+            ImGui::SameLine();
+            shouldUpdate |= ImGui::InputFloat("##Resolution Z", &resZ);
+            ImGui::PopItemWidth();
         }
         ImGui::Dummy(ImVec2(0, 5));
         if (selectedEntityType != 0 && ImGui::Button("Create")) {
