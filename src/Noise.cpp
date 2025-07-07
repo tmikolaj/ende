@@ -13,7 +13,6 @@ void Noise::init(char _seedBuffer[25]) {
     } else {
         gen.seed(rd());
     }
-    seedValue = dist(gen);
 }
 
 int Noise::getSeedValue() {
@@ -29,27 +28,34 @@ int Noise::genNewSeedValue() {
     return seedValue;
 }
 
-float Noise::getBasicPerlin(float x, float z) {
-    float offsetx =  x + seedValue;
-    float offsetz =  z + seedValue;
+float Noise::getBasicPerlin(float x, float z, bool useSeed) {
+    if (useSeed) {
+        x += seedValue;
+        z += seedValue;
+    }
 
-    return (sinf(offsetx * frequency) * cosf(offsetz * frequency)) * amplitude;
+    return (sinf(x * frequency) * cosf(z * frequency)) * amplitude;
 }
 
 float Noise::getFakePerlin(float x, float z) {
     return sinf(x) * cosf(z);
 }
 
-float Noise::getOctave(float x, float z) {
+float Noise::getOctave(float x, float z, bool useSeed) {
     float total = 0.0f;
     float freq = frequency;
     float amp = amplitude;
 
     for (int i = 0; i < octaves; i++) {
         float nx = x * freq;
-        float ny = z * freq;
+        float nz = z * freq;
 
-        float noiseVal = getFakePerlin(nx + seedValue, ny + seedValue);
+        if (useSeed) {
+            nx += seedValue;
+            nz += seedValue;
+        }
+
+        float noiseVal = getFakePerlin(nx, nz);
         total += noiseVal * amp;
 
         amp *= persistence;

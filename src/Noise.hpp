@@ -27,9 +27,9 @@ public:
     int getSeedValue();
     void updateSeedValue(int newVal);
     int genNewSeedValue();
-    float getBasicPerlin(float x, float z);
+    float getBasicPerlin(float x, float z, bool useSeed);
     float getFakePerlin(float x, float z);
-    float getOctave(float x, float z);
+    float getOctave(float x, float z, bool useSeed);
 };
 
 #endif //BASICPERLIN_HPP

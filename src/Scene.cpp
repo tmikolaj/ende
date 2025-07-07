@@ -207,7 +207,9 @@ void Scene::draw() {
     const char* noiseTypes[] = { "BasicPerlin", "Octave" };
     static int selectedNoiseType = 0;
 
-    static int seedVal = perlin.getSeedValue();
+    static int seedVal = perlin.genNewSeedValue();
+
+    static bool enableSeed = false;
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
@@ -381,10 +383,10 @@ void Scene::draw() {
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
 
                 if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "perlin") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z, enableSeed);
 
                 } else if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "octave") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z, enableSeed);
 
                 }
             }
@@ -480,6 +482,7 @@ void Scene::draw() {
             }
 
             ImGui::Text("Seed Value");
+            ImGui::Checkbox("Use Seed ##UseSeedChb", &enableSeed);
             bool shouldUpdateSeedValue = ImGui::InputInt("##SeedVal", &seedVal);
             if (seedVal < -10000) seedVal = -10000;
             if (seedVal > 10000) seedVal = 10000;
@@ -563,6 +566,7 @@ void Scene::draw() {
                 m_context->entities->emplace_back(Entity(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
                 selectedEntity = m_context->entities->size() - 1;
                 m_context->entities->at(selectedEntity).e_terrain->noiseType = "perlin";
+                enableSeed = false;
                 pushed = true;
             }
 
@@ -595,10 +599,10 @@ void Scene::draw() {
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
 
                 if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "perlin") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z, enableSeed);
 
                 } else if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "octave") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z, enableSeed);
 
                 }
             }
@@ -728,6 +732,7 @@ void Scene::draw() {
             ImGui::PopItemWidth();
 
             ImGui::Text("Seed Value");
+            ImGui::Checkbox("Use Seed", &enableSeed);
             bool shouldUpdateSeedValue = ImGui::InputInt("##SeedValInput", &seedVal);
             if (seedVal < -10000) seedVal = -10000;
             if (seedVal > 10000) seedVal = 10000;
