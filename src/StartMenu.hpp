@@ -7,6 +7,7 @@
 #include "external/imgui/imgui.h"
 #include "Context.hpp"
 #include "Scene.hpp"
+#include "Noise.hpp"
 
 class StartMenu : public Engine::bStateTemplate {
 private:
@@ -14,6 +15,9 @@ private:
     char nameBuffer[25];
     bool showEmptyNameWarning;
     std::shared_ptr<Context> m_context;
+
+    char seedBuffer[25];
+    Noise noise;
 public:
     explicit StartMenu(std::shared_ptr<Context>& context);
     ~StartMenu() override = default;

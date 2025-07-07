@@ -4,7 +4,8 @@
 StartMenu::StartMenu(std::shared_ptr<Context>& context) :
 m_context(context),
 nameBuffer{""},
-showEmptyNameWarning(false) {
+showEmptyNameWarning(false),
+seedBuffer("") {
 
 }
 
@@ -52,23 +53,54 @@ void StartMenu::draw() {
         ImGui::SetWindowFontScale(1.0f);
 
         ImGui::SameLine();
-        ImGui::Dummy(ImVec2(50, 5));
+        ImGui::Dummy(ImVec2(60, 0));
         ImGui::SameLine();
         if (ImGui::Button("X")) {
             showEmptyNameWarning = false;
             ImGui::CloseCurrentPopup();
         }
-        ImGui::Dummy(ImVec2(10, 5));
+        ImGui::Dummy(ImVec2(0, 10));
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
         ImGui::Text("Project Name");
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
         bool enterPressed = ImGui::InputText("##Project Name", nameBuffer, IM_ARRAYSIZE(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::Dummy(ImVec2(0, 5));
 
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
+        ImGui::Text("Seed");
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
+        ImGui::InputText("##Seed", seedBuffer, IM_ARRAYSIZE(seedBuffer));
+
+        static float hoverSeed = 0.0f;
+        float delay = 1.0f;
+        if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+            if (hoverSeed == 0.0f) hoverSeed = ImGui::GetTime();
+
+            if (ImGui::GetTime() - hoverSeed > delay) {
+                ImGui::BeginTooltip();
+                ImGui::Text("Seed will be used for terrain generation.");
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "If left empty random number will be used as seed!");
+                ImGui::EndTooltip();
+            }
+        } else {
+            hoverSeed = 0.0f;
+        }
+
+        ImGui::Dummy(ImVec2(0, 5));
+
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
         if (ImGui::Button("Create") || enterPressed) {
             if (nameBuffer[0] == '\0') {
                 showEmptyNameWarning = true;
             } else {
                 ImGui::CloseCurrentPopup();
                 showEmptyNameWarning = false;
+                noise.init(seedBuffer);
                 m_context->states->add(std::make_unique<Scene>(m_context), true);
                 m_context->states->setWindowState(RESTART);
             }
