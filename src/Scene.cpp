@@ -207,6 +207,8 @@ void Scene::draw() {
     const char* noiseTypes[] = { "BasicPerlin", "Octave" };
     static int selectedNoiseType = 0;
 
+    static int seedVal = perlin.getSeedValue();
+
     ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
 
@@ -477,6 +479,15 @@ void Scene::draw() {
 
             }
 
+            ImGui::Text("Seed Value");
+            bool shouldUpdateSeedValue = ImGui::InputInt("##SeedVal", &seedVal);
+            if (seedVal < -10000) seedVal = -10000;
+            if (seedVal > 10000) seedVal = 10000;
+            if (shouldUpdateSeedValue) perlin.updateSeedValue(seedVal);
+            if (ImGui::Button("Generate New Seed")) {
+                seedVal = perlin.genNewSeedValue();
+            }
+
             ImGui::PopItemWidth();
         }
     }
@@ -715,6 +726,15 @@ void Scene::draw() {
             ImGui::SameLine();
             shouldUpdate |= ImGui::InputFloat("##Resolution Z", &resZ);
             ImGui::PopItemWidth();
+
+            ImGui::Text("Seed Value");
+            bool shouldUpdateSeedValue = ImGui::InputInt("##SeedValInput", &seedVal);
+            if (seedVal < -10000) seedVal = -10000;
+            if (seedVal > 10000) seedVal = 10000;
+            if (shouldUpdateSeedValue) perlin.updateSeedValue(seedVal);
+            if (ImGui::Button("Generate New Seed ##NewSeedValBtn")) {
+                seedVal = perlin.genNewSeedValue();
+            }
         }
         ImGui::Dummy(ImVec2(0, 5));
         if (selectedEntityType != 0 && ImGui::Button("Create")) {
