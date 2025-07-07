@@ -16,6 +16,7 @@ public:
     ~Noise() = default;
 
     float getBasicPerlin(float x, float z);
+    float getFakePerlin(float x, float z);
     float getOctave(float x, float z);
 };
 
