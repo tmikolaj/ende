@@ -41,7 +41,7 @@ private:
     // collision (to check if the entity was hit)
     Ray ray;
 
-    Noise perlin;
+    Noise noise;
 
     bool shouldOpenContextPopup;
     float hoverDelay;
