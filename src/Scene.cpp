@@ -207,10 +207,6 @@ void Scene::draw() {
     const char* noiseTypes[] = { "BasicPerlin", "Octave" };
     static int selectedNoiseType = 0;
 
-    static int seedVal = perlin.genNewSeedValue();
-
-    static bool enableSeed = false;
-
     ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
 
@@ -371,11 +367,11 @@ void Scene::draw() {
         ImGui::EndDisabled();
 
         if (m_context->entities->at(selectedEntity).e_type == "terrain") {
-            perlin.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
-            perlin.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
-            perlin.lacunarity = m_context->entities->at(selectedEntity).e_terrain->lacunarity;
-            perlin.octaves = m_context->entities->at(selectedEntity).e_terrain->octaves;
-            perlin.persistence = m_context->entities->at(selectedEntity).e_terrain->persistence;
+            noise.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
+            noise.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
+            noise.lacunarity = m_context->entities->at(selectedEntity).e_terrain->lacunarity;
+            noise.octaves = m_context->entities->at(selectedEntity).e_terrain->octaves;
+            noise.persistence = m_context->entities->at(selectedEntity).e_terrain->persistence;
 
             int vertexCount = (int)m_context->entities->at(selectedEntity).e_vertices.size() / 3;
             for (int i = 0; i < vertexCount; i++) {
@@ -383,10 +379,10 @@ void Scene::draw() {
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
 
                 if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "perlin") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z, enableSeed);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = noise.getBasicPerlin(x, z, m_context->entities->at(selectedEntity).e_seedEnable);
 
                 } else if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "octave") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z, enableSeed);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = noise.getOctave(x, z, m_context->entities->at(selectedEntity).e_seedEnable);
 
                 }
             }
@@ -480,15 +476,16 @@ void Scene::draw() {
                 }
 
             }
+            int& seedVal = m_context->entities->at(selectedEntity).e_seed;
 
             ImGui::Text("Seed Value");
-            ImGui::Checkbox("Use Seed ##UseSeedChb", &enableSeed);
+            ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities->at(selectedEntity).e_seedEnable);
             bool shouldUpdateSeedValue = ImGui::InputInt("##SeedVal", &seedVal);
             if (seedVal < -10000) seedVal = -10000;
             if (seedVal > 10000) seedVal = 10000;
-            if (shouldUpdateSeedValue) perlin.updateSeedValue(seedVal);
+            if (shouldUpdateSeedValue) noise.updateSeedValue(seedVal);
             if (ImGui::Button("Generate New Seed")) {
-                seedVal = perlin.genNewSeedValue();
+                m_context->entities->at(selectedEntity).e_seed = noise.genNewSeedValue();
             }
 
             ImGui::PopItemWidth();
@@ -566,7 +563,6 @@ void Scene::draw() {
                 m_context->entities->emplace_back(Entity(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
                 selectedEntity = m_context->entities->size() - 1;
                 m_context->entities->at(selectedEntity).e_terrain->noiseType = "perlin";
-                enableSeed = false;
                 pushed = true;
             }
 
@@ -587,11 +583,11 @@ void Scene::draw() {
             }
 
             ImGui::Dummy(ImVec2(0, 2.5f));
-            perlin.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
-            perlin.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
-            perlin.lacunarity = m_context->entities->at(selectedEntity).e_terrain->lacunarity;
-            perlin.octaves = m_context->entities->at(selectedEntity).e_terrain->octaves;
-            perlin.persistence = m_context->entities->at(selectedEntity).e_terrain->persistence;
+            noise.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
+            noise.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
+            noise.lacunarity = m_context->entities->at(selectedEntity).e_terrain->lacunarity;
+            noise.octaves = m_context->entities->at(selectedEntity).e_terrain->octaves;
+            noise.persistence = m_context->entities->at(selectedEntity).e_terrain->persistence;
 
             int vertexCount = (int)m_context->entities->at(selectedEntity).e_vertices.size() / 3;
             for (int i = 0; i < vertexCount; i++) {
@@ -599,10 +595,10 @@ void Scene::draw() {
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
 
                 if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "perlin") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z, enableSeed);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = noise.getBasicPerlin(x, z, m_context->entities->at(selectedEntity).e_seedEnable);
 
                 } else if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "octave") {
-                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z, enableSeed);
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = noise.getOctave(x, z, m_context->entities->at(selectedEntity).e_seedEnable);
 
                 }
             }
@@ -732,13 +728,16 @@ void Scene::draw() {
             ImGui::PopItemWidth();
 
             ImGui::Text("Seed Value");
-            ImGui::Checkbox("Use Seed", &enableSeed);
+            ImGui::Checkbox("Use Seed", &m_context->entities->at(selectedEntity).e_seedEnable);
+
+            int& seedVal = m_context->entities->at(selectedEntity).e_seed;
+
             bool shouldUpdateSeedValue = ImGui::InputInt("##SeedValInput", &seedVal);
             if (seedVal < -10000) seedVal = -10000;
             if (seedVal > 10000) seedVal = 10000;
-            if (shouldUpdateSeedValue) perlin.updateSeedValue(seedVal);
+            if (shouldUpdateSeedValue) noise.updateSeedValue(seedVal);
             if (ImGui::Button("Generate New Seed ##NewSeedValBtn")) {
-                seedVal = perlin.genNewSeedValue();
+                m_context->entities->at(selectedEntity).e_seed = noise.genNewSeedValue();
             }
         }
         ImGui::Dummy(ImVec2(0, 5));
