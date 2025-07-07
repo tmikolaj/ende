@@ -2,6 +2,8 @@
 #define ENTITY_HPP
 
 #include <vector>
+#include <string>
+#include <memory>
 #include <external/glm/geometric.hpp>
 #include <external/glm/vec3.hpp>
 #include "external/imgui/imgui.h"
@@ -10,14 +12,18 @@
 struct TerrainType {
     float amplitude;
     float frequency;
+    std::string noiseType;
+    int octaves;
+    float lacunarity;
+    float persistence;
 
-    TerrainType(float amp, float freq) : amplitude(amp), frequency(freq) {}
+    TerrainType(float amp, float freq, const std::string& _nType, int oct, float lac, float per)
+        : amplitude(amp), frequency(freq), noiseType(_nType), octaves(oct), lacunarity(lac), persistence(per) {}
 };
 
 struct Entity {
     Model e_model;
     Mesh* e_mesh;
-
     std::string e_name;
     ImVec4 e_colorValues;
     Color e_color;
@@ -30,16 +36,18 @@ struct Entity {
     std::vector<float> e_normals;
     std::vector<unsigned short> e_indices;
 
-    const char* e_type;
+    std::string e_type;
+    std::unique_ptr<TerrainType> e_terrain;
 
-    TerrainType* e_terrain = nullptr;
+    Entity(Entity&&) noexcept = default;
+    Entity& operator=(Entity&&) noexcept = default;
 
-    Entity(Model _model, const std::string& _name, const char* _type) {
+    Entity(Model _model, const std::string& _name, const std::string& _type) {
         e_name = _name;
         e_type = _type;
 
         if (e_type == "terrain") {
-            e_terrain = new TerrainType(0.1f, 0.01f);
+            e_terrain = std::make_unique<TerrainType>(0.1f, 0.01f, "perlin", 3, 1.2f, 0.8f);
         }
 
         e_model = _model;
@@ -64,7 +72,8 @@ struct Entity {
         e_visible = true;
     }
 
-    Entity(Mesh _mesh, const std::string& _name, const char* _type) : Entity(LoadModelFromMesh(_mesh), _name, _type) {}
+    Entity(Mesh _mesh, const std::string& _name, const std::string& _type)
+        : Entity(LoadModelFromMesh(_mesh), _name, _type) {}
 
     ~Entity() = default;
 
