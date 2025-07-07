@@ -12,6 +12,7 @@ void Noise::init(char _seedBuffer[25]) {
         gen.seed(std::stoi(seedBuffer));
     } else {
         gen.seed(rd());
+        seedValue = 0;
     }
 }
 
@@ -21,9 +22,11 @@ int Noise::getSeedValue() {
 
 void Noise::updateSeedValue(int newVal) {
     seedValue = newVal;
+    gen.seed(seedValue);
 }
 
 int Noise::genNewSeedValue() {
+    gen.seed(seedValue);
     seedValue = dist(gen);
     return seedValue;
 }
