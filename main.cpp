@@ -62,7 +62,9 @@ int main() {
     Entity entity(GenerateGridMesh(10, 1.0f), "plane", "terrain");
     Entity ecube(GenMeshCube(2.0f, 2.0f, 2.0f), "cube", "none");
 
-    std::vector<Entity> entities = { entity, ecube };
+    std::vector<Entity> entities;
+    entities.emplace_back(std::move(ecube));
+    entities.emplace_back(std::move(entity));
     int selectedEntity = -1;
 
     float lightColor[3] = { 1.0f, 1.0f, 1.0f };
