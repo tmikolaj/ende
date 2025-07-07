@@ -337,6 +337,11 @@ void Scene::draw() {
         ImGui::Text("Entity Settings");
         ImGui::SetWindowFontScale(1.0f);
 
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::SetWindowFontScale(1.1f);
+        ImGui::Text("General");
+        ImGui::SetWindowFontScale(1.0f);
+
         ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Text("Entity Color");
         ImGui::ColorEdit3("Mesh color", reinterpret_cast<float*>(&m_context->entities->at(selectedEntity).e_colorValues));
@@ -388,6 +393,11 @@ void Scene::draw() {
             }
 
             ImGui::Dummy(ImVec2(0, 5));
+            ImGui::SetWindowFontScale(1.1f);
+            ImGui::Text("Noise");
+            ImGui::SetWindowFontScale(1.0f);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Choose Noise Type");
             ImGui::Combo("##ChooseNoiseType", &selectedNoiseType, noiseTypes, IM_ARRAYSIZE(noiseTypes));
 
@@ -479,15 +489,21 @@ void Scene::draw() {
             int& seedVal = m_context->entities->at(selectedEntity).e_seed;
 
             ImGui::Dummy(ImVec2(0, 5));
-            ImGui::Text("Seed Value");
+            ImGui::SetWindowFontScale(1.1f);
+            ImGui::Text("Seed");
+            ImGui::SetWindowFontScale(1.0f);
+
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities->at(selectedEntity).e_seedEnable);
+
             ImGui::Dummy(ImVec2(0, 2.5f));
             bool shouldUpdateSeedValue = ImGui::InputInt("##SeedVal", &seedVal);
             if (seedVal < -10000) seedVal = -10000;
             if (seedVal > 10000) seedVal = 10000;
             if (shouldUpdateSeedValue) noise.updateSeedValue(seedVal);
+
             ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Seed Value");
             if (ImGui::Button("Generate New Seed")) {
                 m_context->entities->at(selectedEntity).e_seed = noise.genNewSeedValue();
             }
