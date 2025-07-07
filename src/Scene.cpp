@@ -26,8 +26,8 @@ void Scene::init() {
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    m_context->entities->push_back(Entity(GenMeshCube(1.0f, 1.0f, 1.0f), "cube", "none"));
-    m_context->entities->push_back(Entity(GenMeshPlane(10, 10, 20, 20), "plane", "terrain"));
+    m_context->entities->emplace_back(Entity(GenMeshCube(1.0f, 1.0f, 1.0f), "cube", "none"));
+    m_context->entities->emplace_back(Entity(GenMeshPlane(10, 10, 20, 20), "plane", "terrain"));
 
     // render/shader variables init
     selectedEntity = -1;
@@ -141,13 +141,15 @@ void Scene::draw() {
     ClearBackground(ImVecToColor(voidCol));
 
     // apply shader to all entities
-    for (Entity& e : *m_context->entities) {
-        if (currentSh == SOLID) {
-            e.e_model.materials[0].shader = solidShader;
-        } else if (currentSh == M_PREVIEW || currentSh == WIREFRAME) {
-            e.e_model.materials[0].shader = materialPreviewShader;
-        } else {
-            e.e_model.materials[0].shader = renderShader;
+    if (!m_context->entities->empty()) {
+        for (Entity& e : *m_context->entities) {
+            if (currentSh == SOLID) {
+                e.e_model.materials[0].shader = solidShader;
+            } else if (currentSh == M_PREVIEW || currentSh == WIREFRAME) {
+                e.e_model.materials[0].shader = materialPreviewShader;
+            } else {
+                e.e_model.materials[0].shader = renderShader;
+            }
         }
     }
 
@@ -186,6 +188,25 @@ void Scene::draw() {
     int mw = GetScreenWidth();
     int mh = GetScreenHeight();
 
+    static float startHoverFreq = 0.0f;
+    static float startHoverAmp = 0.0f;
+
+    static float startHoverOct = 0.0f;
+    static float startHoverPer = 0.0f;
+    static float startHoverLac = 0.0f;
+
+    static char searchBuffer[40] = "";
+    static bool inputActive = false;
+    static bool shouldFocus = false;
+
+    static bool shouldUpdateBuffers = false;
+
+    static bool searchEnterPressed = false;
+    static bool searchJustActivated = false;
+
+    const char* noiseTypes[] = { "BasicPerlin", "Octave" };
+    static int selectedNoiseType = 0;
+
     ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
 
@@ -198,12 +219,6 @@ void Scene::draw() {
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Dummy(ImVec2(0, 5));
 
-    static char searchBuffer[40] = "";
-    static bool inputActive = false;
-    static bool shouldFocus = false;
-
-    static bool shouldUpdateBuffers = false;
-
     ImGui::PushItemWidth(380);
 
     ImGui::SetWindowFontScale(1.2f);
@@ -213,8 +228,6 @@ void Scene::draw() {
             shouldFocus = true;
         }
     }
-    static bool searchEnterPressed = false;
-    static bool searchJustActivated = false;
 
     if (inputActive) {
         if (shouldFocus) {
@@ -356,16 +369,33 @@ void Scene::draw() {
         if (m_context->entities->at(selectedEntity).e_type == "terrain") {
             perlin.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
             perlin.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
+            perlin.lacunarity = m_context->entities->at(selectedEntity).e_terrain->lacunarity;
+            perlin.octaves = m_context->entities->at(selectedEntity).e_terrain->octaves;
+            perlin.persistence = m_context->entities->at(selectedEntity).e_terrain->persistence;
 
             int vertexCount = (int)m_context->entities->at(selectedEntity).e_vertices.size() / 3;
             for (int i = 0; i < vertexCount; i++) {
                 float x = m_context->entities->at(selectedEntity).e_vertices[i * 3];
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
-                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
+
+                if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "perlin") {
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
+
+                } else if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "octave") {
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z);
+
+                }
             }
 
-            static float startHoverFreq = 0.0f;
-            static float startHoverAmp = 0.0f;
+            ImGui::Dummy(ImVec2(0, 5));
+            ImGui::Text("Choose Noise Type");
+            ImGui::Combo("##ChooseNoiseType", &selectedNoiseType, noiseTypes, IM_ARRAYSIZE(noiseTypes));
+
+            if (selectedNoiseType == 0) {
+                m_context->entities->at(selectedEntity).e_terrain->noiseType = "perlin";
+            } else if (selectedNoiseType == 1) {
+                m_context->entities->at(selectedEntity).e_terrain->noiseType = "octave";
+            }
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::PushItemWidth(300);
@@ -383,7 +413,8 @@ void Scene::draw() {
                 startHoverFreq = 0.0f;
             }
 
-            shouldUpdateBuffers |= ImGui::SliderFloat("Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            shouldUpdateBuffers |= ImGui::SliderFloat("Amplitude ##setamp", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
 
             if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
                 if (startHoverAmp == 0.0f) startHoverAmp = ImGui::GetTime();
@@ -395,6 +426,55 @@ void Scene::draw() {
                 }
             } else {
                 startHoverAmp = 0.0f;
+            }
+
+            if (selectedNoiseType == 1) {
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                shouldUpdateBuffers |= ImGui::SliderFloat("Lacunarity ##setlac", &m_context->entities->at(selectedEntity).e_terrain->lacunarity, 0.01f, 10.0f);
+
+                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                    if (startHoverLac == 0.0f) startHoverLac = ImGui::GetTime();
+
+                    if (ImGui::GetTime() - startHoverLac > hoverDelay) {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("Lacunarity increases frequency each octave");
+                        ImGui::EndTooltip();
+                    }
+                } else {
+                    startHoverLac = 0.0f;
+                }
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                shouldUpdateBuffers |= ImGui::SliderFloat("Persistence ##setper", &m_context->entities->at(selectedEntity).e_terrain->persistence, 0.01f, 1.0f);
+
+                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                    if (startHoverPer == 0.0f) startHoverPer = ImGui::GetTime();
+
+                    if (ImGui::GetTime() - startHoverPer > hoverDelay) {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("Persistence reduces amplitude each octave");
+                        ImGui::EndTooltip();
+                    }
+                } else {
+                    startHoverPer = 0.0f;
+                }
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                shouldUpdateBuffers |= ImGui::SliderInt("Octaves ##setoct", &m_context->entities->at(selectedEntity).e_terrain->octaves, 1, 32);
+
+                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                    if (startHoverOct == 0.0f) startHoverOct = ImGui::GetTime();
+
+                    if (ImGui::GetTime() - startHoverOct > hoverDelay) {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("Octaves control how many layers of detail are");
+                        ImGui::EndTooltip();
+                    }
+                } else {
+                    startHoverOct = 0.0f;
+                }
+
             }
 
             ImGui::PopItemWidth();
@@ -444,7 +524,7 @@ void Scene::draw() {
         ImGui::Dummy(ImVec2(0, 5));
         const char* entityTypes[] = { "", "Terrain" };
         ImGui::Text("Choose Entity Type");
-        ImGui::Combo("##Choose Entity Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
+        ImGui::Combo("##Choose-Entity-Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
 
         ImGui::Dummy(ImVec2(0, 5));
         ImGui::Separator();
@@ -469,46 +549,74 @@ void Scene::draw() {
             if (!pushed || shouldUpdate) {
                 if (shouldUpdate) m_context->entities->pop_back();
                 shouldUpdate = false;
-                m_context->entities->push_back(Entity(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
+                m_context->entities->emplace_back(Entity(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
+                selectedEntity = m_context->entities->size() - 1;
+                m_context->entities->at(selectedEntity).e_terrain->noiseType = "perlin";
                 pushed = true;
             }
-            selectedEntity = m_context->entities->size() - 1;
 
             ImGui::SetWindowFontScale(1.1f);
             ImGui::Text("Terrain Settings");
             ImGui::SetWindowFontScale(1.0f);
 
+            ImGui::Dummy(ImVec2(0, 5));
+            ImGui::Text("Choose Noise Type");
+            ImGui::Combo("##Choose-Noise-Type", &selectedNoiseType, noiseTypes, IM_ARRAYSIZE(noiseTypes));
+
+            if (selectedNoiseType == 0) {
+                m_context->entities->at(selectedEntity).e_terrain->noiseType = "perlin";
+
+            } else if (selectedNoiseType == 1) {
+                m_context->entities->at(selectedEntity).e_terrain->noiseType = "octave";
+
+            }
+
             ImGui::Dummy(ImVec2(0, 2.5f));
             perlin.frequency = m_context->entities->at(selectedEntity).e_terrain->frequency;
             perlin.amplitude = m_context->entities->at(selectedEntity).e_terrain->amplitude;
+            perlin.lacunarity = m_context->entities->at(selectedEntity).e_terrain->lacunarity;
+            perlin.octaves = m_context->entities->at(selectedEntity).e_terrain->octaves;
+            perlin.persistence = m_context->entities->at(selectedEntity).e_terrain->persistence;
 
             int vertexCount = (int)m_context->entities->at(selectedEntity).e_vertices.size() / 3;
             for (int i = 0; i < vertexCount; i++) {
                 float x = m_context->entities->at(selectedEntity).e_vertices[i * 3];
                 float z = m_context->entities->at(selectedEntity).e_vertices[i * 3 + 2];
-                m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
+
+                if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "perlin") {
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getBasicPerlin(x, z);
+
+                } else if (m_context->entities->at(selectedEntity).e_terrain->noiseType == "octave") {
+                    m_context->entities->at(selectedEntity).e_vertices[i * 3 + 1] = perlin.getOctave(x, z);
+
+                }
             }
 
             m_context->entities->at(selectedEntity).UpdateBuffers();
             ImGui::PushItemWidth(340);
 
-            static float hoverStartFreq = 0.0f;
-            static float hoverStartAmp = 0.0f;
+            // Same variables as startHover... but the timer broke (two variables controlling it) and the tooltip
+            // was not showing so these are to have one variable - one timer
+            static float hoverFreq = 0.0f;
+            static float hoverAmp = 0.0f;
+            static float hoverPer = 0.0f;
+            static float hoverLac = 0.0f;
+            static float hoverOct = 0.0f;
 
             ImGui::Dummy(ImVec2(0, 5));
             ImGui::Text("Frequency");
             shouldUpdateBuffers |= ImGui::SliderFloat("##Frequency", &m_context->entities->at(selectedEntity).e_terrain->frequency, 0.01f, 1.0f);
 
             if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                if (hoverStartFreq == 0.0f) hoverStartFreq = ImGui::GetTime();
+                if (hoverFreq == 0.0f) hoverFreq = ImGui::GetTime();
 
-                if (ImGui::GetTime() - hoverStartFreq > hoverDelay) {
+                if (ImGui::GetTime() - hoverFreq > hoverDelay) {
                     ImGui::BeginTooltip();
                     ImGui::Text("Frequency controls how fast the waves change");
                     ImGui::EndTooltip();
                 }
             } else {
-                hoverStartFreq = 0.0f;
+                hoverFreq = 0.0f;
             }
 
             ImGui::Dummy(ImVec2(0, 2.5f));
@@ -516,16 +624,68 @@ void Scene::draw() {
             shouldUpdateBuffers |= ImGui::SliderFloat("##Amplitude", &m_context->entities->at(selectedEntity).e_terrain->amplitude, -20.0f, 20.0f);
 
             if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                if (hoverStartAmp == 0.0f) hoverStartAmp = ImGui::GetTime();
+                if (hoverAmp == 0.0f) hoverAmp = ImGui::GetTime();
 
-                if (ImGui::GetTime() - hoverStartAmp > hoverDelay) {
+                if (ImGui::GetTime() - hoverAmp > hoverDelay) {
                     ImGui::BeginTooltip();
                     ImGui::Text("Amplitude controls how tall the bumps are");
                     ImGui::EndTooltip();
                 }
             } else {
-                hoverStartAmp = 0.0f;
+                hoverAmp = 0.0f;
             }
+
+            if (selectedNoiseType == 1) {
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Text("Lacunarity");
+                shouldUpdateBuffers |= ImGui::SliderFloat("##Lacunarity", &m_context->entities->at(selectedEntity).e_terrain->lacunarity, 0.01f, 10.0f);
+
+                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                    if (hoverLac == 0.0f) hoverLac = ImGui::GetTime();
+
+                    if (ImGui::GetTime() - hoverLac > hoverDelay) {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("Lacunarity increases frequency each octave");
+                        ImGui::EndTooltip();
+                    }
+                } else {
+                    hoverLac = 0.0f;
+                }
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Text("Persistence");
+                shouldUpdateBuffers |= ImGui::SliderFloat("##Persistence", &m_context->entities->at(selectedEntity).e_terrain->persistence, 0.01f, 1.0f);
+
+                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                    if (hoverPer == 0.0f) hoverPer = ImGui::GetTime();
+
+                    if (ImGui::GetTime() - hoverPer > hoverDelay) {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("Persistence reduces amplitude each octave");
+                        ImGui::EndTooltip();
+                    }
+                } else {
+                    hoverPer = 0.0f;
+                }
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Text("Octaves");
+                ImGui::SliderInt("##Octaves", &m_context->entities->at(selectedEntity).e_terrain->octaves, 1, 32);
+
+                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
+                    if (hoverOct == 0.0f) hoverOct = ImGui::GetTime();
+
+                    if (ImGui::GetTime() - hoverOct > hoverDelay) {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("Octaves control how many layers of detail are");
+                        ImGui::EndTooltip();
+                    }
+                } else {
+                    hoverOct = 0.0f;
+                }
+
+            }
+
             ImGui::PopItemWidth();
 
             ImGui::Dummy(ImVec2(0, 2.5f));
