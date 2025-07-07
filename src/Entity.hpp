@@ -24,10 +24,16 @@ struct TerrainType {
 struct Entity {
     Model e_model;
     Mesh* e_mesh;
+
     std::string e_name;
+
     ImVec4 e_colorValues;
     Color e_color;
+
     bool e_visible;
+
+    bool e_seedEnable;
+    int e_seed;
 
     BoundingBox e_boundingBox;
     float e_position[3];
@@ -52,6 +58,9 @@ struct Entity {
 
         e_model = _model;
         e_mesh = &e_model.meshes[0];
+
+        e_seed = 0;
+        e_seedEnable = false;
 
         e_position[0] = 0.0f;
         e_position[1] = 0.0f;
