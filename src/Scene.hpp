@@ -7,6 +7,7 @@
 #include "Noise.hpp"
 // #include "rlights.h"
 #include "external/glm/glm.hpp"
+#include "Entities/TerrainType.hpp"
 
 enum currentShader {
     SOLID = 0,
