@@ -13,6 +13,8 @@ set(IMGUI_SRC
         external/imgui/imgui_widgets.cpp
         src/Entities/TerrainType.cpp
         src/Entities/TerrainType.hpp
+        src/Entities/RockType.cpp
+        src/Entities/RockType.hpp
 )
 add_library(imgui STATIC ${IMGUI_SRC})
 target_include_directories(imgui PUBLIC external/imgui)
