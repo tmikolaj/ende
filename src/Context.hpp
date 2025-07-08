@@ -2,7 +2,7 @@
 #define CONTEXT_HPP
 
 #include "StateManager.hpp"
-#include "Entity.hpp"
+#include "Entities/Entity.hpp"
 
 enum WindowState {
     NONE = 0,
@@ -13,11 +13,11 @@ enum WindowState {
 struct Context {
     // TODO:
     std::unique_ptr<Engine::StateManager> states;
-    std::unique_ptr<std::vector<Entity>> entities;
+    std::vector<std::unique_ptr<Entity>> entities;
 
-    Context() {
-        states = std::make_unique<Engine::StateManager>();
-        entities = std::make_unique<std::vector<Entity>>();
+    Context() : entities(),
+    states(std::make_unique<Engine::StateManager>()) {
+
     }
 };
 
