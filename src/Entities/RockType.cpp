@@ -4,7 +4,6 @@ RockType::RockType(Model _model, const std::string &_name, const std::string &_t
 Entity(_model, _name, "rock"),
 frequency(0.3f),
 amplitude(0.5f),
-roughness(0.5f),
 rockType(0) {
 
 }
