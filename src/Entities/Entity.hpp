@@ -8,6 +8,8 @@
 #include "../glm/glm.hpp"
 #include "../raylib/src/raylib.h"
 
+class Shaper;
+
 class Entity {
 public:
 	Entity(Model _model, const std::string& _name, const std::string& _type) {
@@ -28,8 +30,10 @@ public:
   		e_vertices.assign(rawVerts, rawVerts + e_mesh->vertexCount * 3);
   		auto rawNormals = static_cast<float*>(e_mesh->normals);
   		e_normals.assign(rawNormals, rawNormals + e_mesh->vertexCount * 3);
-  		auto rawIndices = static_cast<unsigned short*>(e_mesh->indices);
-  		e_indices.assign(rawIndices, rawIndices + e_mesh->triangleCount * 3);
+		if (e_mesh->indices != nullptr) {
+			auto rawIndices = static_cast<unsigned short*>(e_mesh->indices);
+			e_indices.assign(rawIndices, rawIndices + e_mesh->triangleCount * 3);
+		}
 
   		e_colorValues = { 1.0f, 1.0f, 1.0f, 1.0f };
   		e_color = ImVecToColor(e_colorValues);
@@ -43,7 +47,13 @@ public:
     Entity(Entity&&) noexcept = default;
     Entity& operator=(Entity&&) noexcept = default;
 
-    virtual ~Entity() = default;
+    virtual ~Entity() {
+	    if (!e_shapers.empty()) {
+		    for (auto& shaper : e_shapers) {
+			    delete &shaper;
+		    }
+	    }
+    }
 
 	Model e_model;
 	Mesh* e_mesh;
@@ -54,6 +64,8 @@ public:
 	Color e_color;
 
 	bool e_visible;
+
+	std::vector<Shaper*> e_shapers;
 
 	bool e_seedEnable;
 	int e_seed;
