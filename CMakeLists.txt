@@ -15,6 +15,9 @@ set(IMGUI_SRC
         src/Entities/TerrainType.hpp
         src/Entities/RockType.cpp
         src/Entities/RockType.hpp
+        src/Shapers/Shaper.hpp
+        src/Shapers/SubdivisionShaper.cpp
+        src/Shapers/SubdivisionShaper.hpp
 )
 add_library(imgui STATIC ${IMGUI_SRC})
 target_include_directories(imgui PUBLIC external/imgui)
