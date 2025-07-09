@@ -1,0 +1,17 @@
+#ifndef SHAPER_HPP
+#define SHAPER_HPP
+
+#include "../Entities/Entity.hpp"
+
+class Shaper {
+protected:
+    Entity* entity;
+public:
+    explicit Shaper(Entity* _entity) : entity(_entity) { }
+    virtual ~Shaper() = default;
+
+    bool s_added = false;
+    virtual void Apply() = 0;
+};
+
+#endif //SHAPER_HPP
