@@ -50,6 +50,7 @@ BoundingBox TerrainType::GenMeshBoundingBox(const Mesh& mesh, float pos[3]) {
 void TerrainType::UpdateBuffers() {
     RecalcNormals();
     UpdateMeshBuffer(*e_mesh, 0, e_vertices.data(), e_vertices.size() * sizeof(float), 0);
+    UpdateMeshBuffer(*e_mesh, 1, e_indices.data(), e_indices.size() * sizeof(unsigned short), 0);
     UpdateMeshBuffer(*e_mesh, 2, e_normals.data(), e_normals.size() * sizeof(float), 0);
 }
 
