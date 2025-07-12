@@ -47,13 +47,7 @@ public:
     Entity(Entity&&) noexcept = default;
     Entity& operator=(Entity&&) noexcept = default;
 
-    virtual ~Entity() {
-	    if (!e_shapers.empty()) {
-		    for (auto& shaper : e_shapers) {
-			    delete &shaper;
-		    }
-	    }
-    }
+    virtual ~Entity() = default;
 
 	Model e_model;
 	Mesh* e_mesh;
