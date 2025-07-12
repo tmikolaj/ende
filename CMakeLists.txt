@@ -39,6 +39,10 @@ add_executable(3DProdGen
         src/Scene.hpp
         src/Noise.cpp
         src/Noise.hpp
+        src/Extras/CustomMeshes.cpp
+        src/Extras/CustomMeshes.hpp
+        src/Debug/Normals.cpp
+        src/Debug/Normals.hpp
 )
 
 target_link_libraries(3DProdGen
