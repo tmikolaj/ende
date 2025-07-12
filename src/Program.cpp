@@ -16,11 +16,16 @@ void Program::run() {
     while (true) {
         while (!WindowShouldClose()) {
             w_state = context->states->getWindowState();
-            if (w_state == EXIT) exit(0);
+            if (w_state == EXIT) {
+                context->states->getCurrentState()->clean();
+                exit(0);
+            }
             context->states->processState();
             context->states->getCurrentState()->process();
             context->states->getCurrentState()->draw();
         }
-        if (w_state == NONE || w_state == EXIT) break;
+        if (WindowShouldClose()) {
+            context->states->getCurrentState()->clean();
+        }
     }
 }
