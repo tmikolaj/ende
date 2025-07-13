@@ -4,7 +4,7 @@
 
 #include "../../external/raylib/src/raymath.h"
 
-void Normals::DrawFaceNormals(const Mesh& mesh, float length, Color color) {
+void Normals::DrawVertexNormals(const Mesh& mesh, float length, Color color) {
     for (int i = 0; i < mesh.vertexCount; i++) {
         Vector3 position = {
             mesh.vertices[i * 3],
@@ -28,7 +28,7 @@ void Normals::DrawFaceNormals(const Mesh& mesh, float length, Color color) {
     }
 }
 
-void Normals::DrawVertexNormals(const Mesh& mesh, float length, Color color) {
+void Normals::DrawFaceNormals(const Mesh& mesh, float length, Color color) {
     for (int i = 0; i < mesh.triangleCount; i++) {
         int i0 = mesh.indices[i * 3];
         int i1 = mesh.indices[i * 3 + 1];
