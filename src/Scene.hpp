@@ -8,6 +8,10 @@
 // #include "rlights.h"
 #include "external/glm/glm.hpp"
 #include "Entities/TerrainType.hpp"
+#include "Entities/RockType.hpp"
+#include "Shapers/Shaper.hpp"
+#include "Shapers/SubdivisionShaper.hpp"
+#include "Extras/CustomMeshes.hpp"
 
 enum currentShader {
     SOLID = 0,
@@ -43,6 +47,7 @@ private:
     Ray ray;
 
     Noise noise;
+    CustomMeshes customMeshes;
 
     bool shouldOpenContextPopup;
     float hoverDelay;
