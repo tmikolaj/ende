@@ -12,6 +12,7 @@
 #include "Shapers/Shaper.hpp"
 #include "Shapers/SubdivisionShaper.hpp"
 #include "Extras/CustomMeshes.hpp"
+#include "Debug/Normals.hpp"
 
 enum currentShader {
     SOLID = 0,
@@ -48,6 +49,7 @@ private:
 
     Noise noise;
     CustomMeshes customMeshes;
+    Normals normalController;
 
     bool shouldOpenContextPopup;
     float hoverDelay;
@@ -76,6 +78,11 @@ private:
     ImVec4 onSelectionWiresColor;
     // program settings
     bool useStrictSearch;
+    bool showEdgeNormals;
+    bool showVertexNormals;
+    bool showFaceNormals;
+    float length;
+    ImVec4 normalsColor;
 public:
     explicit Scene(std::shared_ptr<Context>& context);
     Scene() = default;

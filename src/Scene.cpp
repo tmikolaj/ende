@@ -71,6 +71,11 @@ void Scene::init() {
 
     // program settings init
     useStrictSearch = false;
+    showEdgeNormals = false;
+    showVertexNormals = false;
+    showFaceNormals = false;
+    length = 0.1f;
+    normalsColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
@@ -173,6 +178,9 @@ void Scene::draw() {
         if (selectedEntity == i) {
             if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionMeshColor));
             if (currentSh != SOLID) DrawModelWires(m_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionWiresColor));
+            if (showEdgeNormals) normalController.DrawEdgeNormals(*m_context->entities.at(i)->e_mesh, length, ImVecToColor(normalsColor));
+            if (showFaceNormals) normalController.DrawFaceNormals(*m_context->entities.at(i)->e_mesh, length, ImVecToColor(normalsColor));
+            if (showVertexNormals) normalController.DrawVertexNormals(*m_context->entities.at(i)->e_mesh, length, ImVecToColor(normalsColor));
         } else {
             if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities.at(i)->e_model, epos, 1.0f, m_context->entities.at(i)->e_color);
             if (currentSh != SOLID && (showWires || toggleWireframe || currentSh == WIREFRAME)) DrawModelWires(m_context->entities.at(i)->e_model, epos, 1.0f, RED);
@@ -908,6 +916,20 @@ void Scene::draw() {
         }
         if (ImGui::CollapsingHeader("Advanced Scene Settings")) {
             ImGui::Checkbox("Strict Search", &useStrictSearch);
+            ImGui::Text("Show Normals");
+            ImGui::Checkbox("Vertex", &showVertexNormals);
+            ImGui::Checkbox("Face", &showFaceNormals);
+            ImGui::Checkbox("Edge", &showEdgeNormals);
+            ImGui::Text("Normals length");
+            if (!showFaceNormals && !showVertexNormals && !showEdgeNormals) {
+                ImGui::BeginDisabled();
+            }
+            ImGui::SliderFloat("##NormalsLength", &length, 0.1f, 5.0f);
+            if (!showFaceNormals && !showVertexNormals && !showEdgeNormals) {
+                ImGui::EndDisabled();
+            }
+            ImGui::Text("Normals Color");
+            ImGui::ColorEdit3("##NormalsColor", reinterpret_cast<float *>(&normalsColor));
         }
 
         ImGui::EndPopup();
