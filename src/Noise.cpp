@@ -31,7 +31,7 @@ int Noise::genNewSeedValue() {
     return seedValue;
 }
 
-float Noise::getBasicPerlin(float x, float z, bool useSeed) {
+float Noise::getBasicPerlinTerrain(float x, float z, bool useSeed) {
     if (useSeed) {
         x += seedValue;
         z += seedValue;
@@ -40,11 +40,11 @@ float Noise::getBasicPerlin(float x, float z, bool useSeed) {
     return (sinf(x * frequency) * cosf(z * frequency)) * amplitude;
 }
 
-float Noise::getFakePerlin(float x, float z) {
+float Noise::getFakePerlinTerrain(float x, float z) {
     return sinf(x) * cosf(z);
 }
 
-float Noise::getOctave(float x, float z, bool useSeed) {
+float Noise::getOctaveTerrain(float x, float z, bool useSeed) {
     float total = 0.0f;
     float freq = frequency;
     float amp = amplitude;
@@ -58,7 +58,7 @@ float Noise::getOctave(float x, float z, bool useSeed) {
             nz += seedValue;
         }
 
-        float noiseVal = getFakePerlin(nx, nz);
+        float noiseVal = getFakePerlinTerrain(nx, nz);
         total += noiseVal * amp;
 
         amp *= persistence;
@@ -66,4 +66,16 @@ float Noise::getOctave(float x, float z, bool useSeed) {
     }
 
     return total;
+}
+
+glm::vec3 Noise::getBasicPerlinRock(const glm::vec3& v, bool useSeed) {
+    glm::vec3 input = v * frequency;
+
+    float n = sin(input.x) + cos(input.y) + sin(input.z);
+
+    float displacement = n * amplitude;
+    glm::vec3 direction = glm::normalize(v);
+    glm::vec3 displaced = direction * (1.0f + displacement);
+
+    return displaced;
 }

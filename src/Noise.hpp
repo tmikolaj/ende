@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <random>
+#include <external/glm/glm.hpp>
 
 class Noise {
 private:
@@ -27,9 +28,14 @@ public:
     int getSeedValue();
     void updateSeedValue(int newVal);
     int genNewSeedValue();
-    float getBasicPerlin(float x, float z, bool useSeed);
-    float getFakePerlin(float x, float z);
-    float getOctave(float x, float z, bool useSeed);
+
+    // TERRAIN SPECIFIC NOISE
+    float getBasicPerlinTerrain(float x, float z, bool useSeed);
+    float getFakePerlinTerrain(float x, float z);
+    float getOctaveTerrain(float x, float z, bool useSeed);
+
+    // ROCK SPECIFIC NOISE
+    glm::vec3 getBasicPerlinRock(const glm::vec3& v, bool useSeed);
 };
 
 #endif //BASICPERLIN_HPP
