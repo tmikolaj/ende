@@ -11,7 +11,7 @@ public:
     virtual ~Shaper() = default;
 
     bool s_added = false;
-    virtual void Apply() = 0;
+    virtual void Apply(std::unique_ptr<Entity>& e) = 0;
 };
 
 #endif //SHAPER_HPP
