@@ -204,8 +204,13 @@ void Scene::draw() {
     static bool searchEnterPressed = false;
     static bool searchJustActivated = false;
 
+    const char* shapers[] = { "", "Subdivision" };
+    static int selectedShaper = 0;
+
     const char* noiseTypes[] = { "BasicPerlin", "Octave" };
+    const char* rockTypes[] = { "Basic Rock" };
     static int selectedNoiseType = 0;
+    static int selectedRockType = 0;
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
@@ -371,6 +376,22 @@ void Scene::draw() {
         ImGui::Checkbox("Show Wires", &showWires);
         ImGui::EndDisabled();
 
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::SetWindowFontScale(1.1f);
+        ImGui::Text("Shapers");
+        ImGui::SetWindowFontScale(1.0f);
+
+        ImGui::Text("Choose Shaper");
+        ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
+
+        if (selectedShaper != 0) {
+            m_context->entities.at(selectedEntity)->e_shapers.push_back(new SubdivisionShaper(m_context->entities.at(selectedEntity).get(), m_context->entities.at(selectedEntity)->e_type != "terrain"));
+
+            if (ImGui::Button("Subdivide")) {
+                m_context->entities.at(selectedEntity)->e_shapers.at(0)->Apply(m_context->entities.at(selectedEntity));
+            }
+        }
+
         if (m_context->entities.at(selectedEntity)->e_type == "terrain") {
             auto* terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
 
@@ -386,10 +407,10 @@ void Scene::draw() {
                 float z = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
 
                 if (terrain->noiseType == "perlin") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getBasicPerlin(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getBasicPerlinTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 } else if (terrain->noiseType == "octave") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getOctave(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getOctaveTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 }
             }
@@ -511,6 +532,39 @@ void Scene::draw() {
             }
 
             ImGui::PopItemWidth();
+        } else if (m_context->entities.at(selectedEntity)->e_type == "rock") {
+            auto* rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+
+            noise.frequency = rock->frequency;
+            noise.amplitude = rock->amplitude;
+
+            int vertexCount = (int)m_context->entities.at(selectedEntity)->e_vertices.size() / 3;
+            for (int i = 0; i < vertexCount; i++) {
+                float v0 = m_context->entities.at(selectedEntity)->e_vertices[i * 3];
+                float v1 = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1];
+                float v2 = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
+
+                glm::vec3 v(v0, v1, v2);
+
+                v = noise.getBasicPerlinRock(v, m_context->entities.at(selectedEntity)->e_seedEnable);
+
+                m_context->entities.at(selectedEntity)->e_vertices[i * 3] = v.x;
+                m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = v.y;
+                m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2] = v.z;
+            }
+
+            ImGui::Dummy(ImVec2(0, 5));
+            ImGui::SetWindowFontScale(1.1f);
+            ImGui::Text("Noise");
+            ImGui::SetWindowFontScale(1.0f);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Amplitude");
+            ImGui::SliderFloat("##RockAmplitude", &rock->amplitude, 0.10f, 1.0f);
+            ImGui::Text("Frequency");
+            ImGui::SliderFloat("##RockFrequency", &rock->frequency, 0.01f, 1.0f);
+
+            m_context->entities.at(selectedEntity)->UpdateBuffers();
         }
     }
     // SCENE SETTINGS
@@ -555,7 +609,7 @@ void Scene::draw() {
         ImGui::SetWindowFontScale(1.0f);
 
         ImGui::Dummy(ImVec2(0, 5));
-        const char* entityTypes[] = { "", "Terrain" };
+        const char* entityTypes[] = { "", "Terrain", "Rock" };
         ImGui::Text("Choose Entity Type");
         ImGui::Combo("##Choose-Entity-Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
 
@@ -570,10 +624,13 @@ void Scene::draw() {
             pushed = false;
             ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Select Entity Type To View Additional Settings Here!");
         } else if (selectedEntityType == 1) {
+
             static TerrainType* _terrain;
             if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-                _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
 
+                if (m_context->entities.at(selectedEntity)->e_type == "rock") {
+                    _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
+                }
             } else {
                 _terrain = nullptr;
             }
@@ -583,15 +640,11 @@ void Scene::draw() {
             static float resX = 20;
             static float resZ = 20;
             static bool shouldUpdate = false;
-            if (!pushed) {
-                width = length = 10;
-                resX = resZ = 20;
-            }
             if (!pushed || shouldUpdate) {
                 if (shouldUpdate) m_context->entities.pop_back();
                 shouldUpdate = false;
                 m_context->entities.emplace_back(std::make_unique<TerrainType>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
-                selectedEntity = m_context->entities.size() - 1;
+                selectedEntity = static_cast<int>(m_context->entities.size() - 1);
                 _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
                 _terrain->noiseType = "perlin";
                 pushed = true;
@@ -626,10 +679,10 @@ void Scene::draw() {
                 float z = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
 
                 if (_terrain->noiseType == "perlin") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getBasicPerlin(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getBasicPerlinTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 } else if (_terrain->noiseType == "octave") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getOctave(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getOctaveTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 }
             }
@@ -770,7 +823,29 @@ void Scene::draw() {
             if (ImGui::Button("Generate New Seed ##NewSeedValBtn")) {
                 m_context->entities.at(selectedEntity)->e_seed = noise.genNewSeedValue();
             }
+        } else if (selectedEntityType == 2) {
+            static RockType* _rock;
+            if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+                if (m_context->entities.at(selectedEntity)->e_type == "rock") {
+                    _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+                }
+            } else {
+                _rock = nullptr;
+            }
+
+            if (!pushed) {
+                // TODO: Add options to choose primitive for rock and generate a bounding box for it
+                m_context->entities.emplace_back(std::make_unique<RockType>(customMeshes.GenMeshIcosahedron(), "rock", "rock"));
+                selectedEntity = static_cast<int>(m_context->entities.size() - 1);
+                _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+                pushed = true;
+            }
+
+            ImGui::SetWindowFontScale(1.1f);
+            ImGui::Text("Rock Settings");
+            ImGui::SetWindowFontScale(1.0f);
         }
+
         ImGui::Dummy(ImVec2(0, 5));
         if (selectedEntityType != 0 && ImGui::Button("Create")) {
             pushed = false;
@@ -852,6 +927,16 @@ void Scene::draw() {
 }
 
 void Scene::clean() {
+    for (auto& entityPtr : m_context->entities) {
+        Entity& e = *entityPtr;
+
+        for (auto& shaper : e.e_shapers) {
+            delete shaper;
+        }
+
+        UnloadModel(e.e_model);
+    }
+
     UnloadShader(solidShader);
     UnloadShader(renderShader);
     CloseWindow();
