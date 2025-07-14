@@ -64,8 +64,11 @@ private:
     // camera
     float zoomSpeed;
     float distance;
-    // void color
-    ImVec4 voidCol;
+    // void colors
+    ImVec4 voidColSol;
+    ImVec4 voidColMat;
+    ImVec4 voidColRen;
+    ImVec4 voidColWir;
     // solid shader
     bool colorChanged;
     bool dirChanged;

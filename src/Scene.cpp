@@ -57,8 +57,11 @@ void Scene::init() {
     chunkSize = 2.5f;
     showGrid = true;
 
-    // void color init
-    voidCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    // void colors init
+    voidColSol = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+    voidColMat = ImVec4(0.35f, 0.35f, 0.35f, 1.0f);
+    voidColRen = ImVec4(0.05f, 0.05f, 0.05f, 1.0f);
+    voidColWir = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
 
     // solid shader init
     colorChanged = false;
@@ -142,7 +145,15 @@ void Scene::draw() {
     }
 
     BeginDrawing();
-    ClearBackground(ImVecToColor(voidCol));
+    if (currentSh == SOLID) {
+        ClearBackground(ImVecToColor(voidColSol));
+    } else if (currentSh == M_PREVIEW) {
+        ClearBackground(ImVecToColor(voidColMat));
+    } else if (currentSh == RENDER) {
+        ClearBackground(ImVecToColor(voidColRen));
+    } else {
+        ClearBackground(ImVecToColor(voidColWir));
+    }
 
     // apply shader to all entities
     if (!m_context->entities.empty()) {
@@ -187,11 +198,51 @@ void Scene::draw() {
         }
     }
 
-    if (showGrid) DrawGrid(100, chunkSize);
+    if (showGrid && currentSh != RENDER) DrawGrid(100, chunkSize);
 
     EndMode3D();
 
     rlImGuiBegin();
+
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Close Project")) {
+
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Preferences")) {
+
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("View")) {
+            if (ImGui::BeginMenu("Change Shader")) {
+                if (ImGui::MenuItem("Solid", nullptr, currentSh == SOLID)) {
+                    currentSh = SOLID;
+                }
+                if (ImGui::MenuItem("Material Preview", nullptr, currentSh == M_PREVIEW)) {
+                    currentSh = M_PREVIEW;
+                }
+                if (ImGui::MenuItem("Render", nullptr, currentSh == RENDER)) {
+                    currentSh = RENDER;
+                }
+                if (ImGui::MenuItem("Wireframe", nullptr, currentSh == WIREFRAME)) {
+                    currentSh = WIREFRAME;
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Add")) {
+            if (ImGui::MenuItem("Terrain")) {
+
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
 
     int mw = GetScreenWidth();
     int mh = GetScreenHeight();
@@ -598,8 +649,15 @@ void Scene::draw() {
     ImGui::EndDisabled();
 
     ImGui::Dummy(ImVec2(0, 2.5f));
-    ImGui::Text("Void Color");
-    ImGui::ColorEdit3("##VoidColorEdit", reinterpret_cast<float *>(&voidCol));
+    ImGui::Text("Void Colors");
+    ImGui::Text("Solid");
+    ImGui::ColorEdit3("##VoidColorSolidEdit", reinterpret_cast<float *>(&voidColSol));
+    ImGui::Text("Material Preview");
+    ImGui::ColorEdit3("##VoidColorMaterialPreviewEdit", reinterpret_cast<float *>(&voidColMat));
+    ImGui::Text("Render");
+    ImGui::ColorEdit3("##VoidColorRenderEdit", reinterpret_cast<float *>(&voidColRen));
+    ImGui::Text("Wireframe");
+    ImGui::ColorEdit3("##VoidColorWireframeEdit", reinterpret_cast<float *>(&voidColWir));
 
     // ENTITY ADD
     ImGui::Dummy(ImVec2(0, 5));
@@ -942,8 +1000,8 @@ void Scene::draw() {
     ImGui::End();
     rlImGuiEnd();
 
-    std::string text = "Current mode: " + curr_m;
-    DrawText(text.c_str(), 20, 10, 20, BLACK);
+    // std::string text = "Current mode: " + curr_m;
+    // DrawText(text.c_str(), 20, 30, 20, BLACK);
 
     EndDrawing();
 }
