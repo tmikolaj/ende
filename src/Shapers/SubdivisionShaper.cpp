@@ -34,6 +34,7 @@ int SubdivisionShaper::GetMidpoint(int i1, int i2, std::vector<float>& vertices,
 void SubdivisionShaper::Apply(std::unique_ptr<Entity>& e) {
     std::vector<float> newVertices = e->e_vertices;
     std::vector<unsigned short> newIndices;
+    std::vector<float> newNormals;
 
     std::map<std::pair<int, int>, int> midpointCache;
 
@@ -52,14 +53,21 @@ void SubdivisionShaper::Apply(std::unique_ptr<Entity>& e) {
         newIndices.push_back(a); newIndices.push_back(b); newIndices.push_back(c);
     }
 
+    e->RecalcNormals();
+    e->e_normals = newNormals;
+
     UnloadModel(e->e_model);
 
     Mesh newMesh = { 0 };
+
     newMesh.vertices = static_cast<float*>(RL_MALLOC(sizeof(float) * newVertices.size()));
     memcpy(newMesh.vertices, newVertices.data(), sizeof(float) * newVertices.size());
 
     newMesh.indices = static_cast<unsigned short*>(RL_MALLOC(sizeof(unsigned short) * newIndices.size()));
     memcpy(newMesh.indices, newIndices.data(), sizeof(unsigned short) * newIndices.size());
+
+    newMesh.normals  = (float*)RL_MALLOC(sizeof(float) * newNormals.size());
+    memcpy(newMesh.normals, newNormals.data(), sizeof(float) * newNormals.size());
 
     newMesh.vertexCount = static_cast<int>(newVertices.size()) / 3;
     newMesh.triangleCount = static_cast<int>(newIndices.size()) / 3;
