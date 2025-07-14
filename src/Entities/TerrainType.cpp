@@ -72,9 +72,9 @@ void TerrainType::RecalcNormals() {
         glm::vec3 normal = glm::normalize(glm::cross(edge2, edge1));
 
         for (unsigned int index : {i0, i1, i2}) {
-            e_normals[index * 3] = normal.x;
-            e_normals[index * 3 + 1] = normal.y;
-            e_normals[index * 3 + 2] = normal.z;
+            e_normals[index * 3] += normal.x;
+            e_normals[index * 3 + 1] += normal.y;
+            e_normals[index * 3 + 2] += normal.z;
         }
     }
 
@@ -82,8 +82,8 @@ void TerrainType::RecalcNormals() {
         glm::vec3 n(e_normals[i], e_normals[i + 1], e_normals[i + 2]);
         n = glm::normalize(n);
 
-        e_normals[i] += n.x;
-        e_normals[i + 1] += n.y;
-        e_normals[i + 2] += n.z;
+        e_normals[i] = n.x;
+        e_normals[i + 1] = n.y;
+        e_normals[i + 2] = n.z;
     }
 }
