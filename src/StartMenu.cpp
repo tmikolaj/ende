@@ -50,11 +50,14 @@ void StartMenu::draw() {
 
     if (ImGui::BeginPopupModal("Create Project", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
         m_context->fontMgr.setLG();
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
         ImGui::Text("Create New Project");
         ImGui::PopFont();
 
         ImGui::SameLine();
-        ImGui::Dummy(ImVec2(80, 0));
+        ImGui::Dummy(ImVec2(60, 0));
         ImGui::SameLine();
         if (ImGui::Button("X")) {
             showEmptyNameWarning = false;
@@ -63,18 +66,28 @@ void StartMenu::draw() {
         ImGui::Dummy(ImVec2(0, 10));
         ImGui::Dummy(ImVec2(10, 0));
         ImGui::SameLine();
+        m_context->fontMgr.setMD();
         ImGui::Text("Project Name");
+        ImGui::PopFont();
         ImGui::Dummy(ImVec2(10, 0));
         ImGui::SameLine();
+        m_context->fontMgr.setSM();
+        ImGui::PushItemWidth(222);
         bool enterPressed = ImGui::InputText("##Project Name", nameBuffer, IM_ARRAYSIZE(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::PopFont();
         ImGui::Dummy(ImVec2(0, 5));
 
         ImGui::Dummy(ImVec2(10, 0));
         ImGui::SameLine();
+        m_context->fontMgr.setMD();
         ImGui::Text("Seed");
+        ImGui::PopFont();
         ImGui::Dummy(ImVec2(10, 0));
         ImGui::SameLine();
+        m_context->fontMgr.setSM();
         ImGui::InputText("##Seed", seedBuffer, IM_ARRAYSIZE(seedBuffer));
+        ImGui::PopItemWidth();
+        ImGui::PopFont();
 
         static float hoverSeed = 0.0f;
         float delay = 1.0f;
@@ -107,11 +120,14 @@ void StartMenu::draw() {
             }
         }
         ImGui::SameLine();
-        ImGui::Dummy(ImVec2(2.5f, 0));
-        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(0, 5));
+        m_context->fontMgr.setSM();
         if (showEmptyNameWarning) {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Project Name Cannot Be Empty!");
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Project name cannot be empty!");
         }
+        ImGui::PopFont();
+        ImGui::Dummy(ImVec2(0, 5));
 
         ImGui::EndPopup();
     }
