@@ -48,6 +48,7 @@ void Scene::init() {
     curr_m = "SOLID";
     onSelectionMeshColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
     onSelectionWiresColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+    entityToAdd = -1;
 
     // shader related variables init
     // solid shader
@@ -236,6 +237,30 @@ void Scene::draw() {
 
     rlImGuiBegin();
 
+    static float startHoverFreq = 0.0f;
+    static float startHoverAmp = 0.0f;
+
+    static float startHoverOct = 0.0f;
+    static float startHoverPer = 0.0f;
+    static float startHoverLac = 0.0f;
+
+    static char searchBuffer[40] = "";
+    static bool inputActive = false;
+    static bool shouldFocus = false;
+
+    static bool shouldUpdateBuffers = false;
+
+    static bool searchEnterPressed = false;
+    static bool searchJustActivated = false;
+
+    const char* shapers[] = { "", "Subdivision" };
+    static int selectedShaper = 0;
+
+    const char* noiseTypes[] = { "BasicPerlin", "Octave" };
+    const char* rockTypes[] = { "Basic Rock" };
+    static int selectedNoiseType = 0;
+    static int selectedRockType = 0;
+
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Close Project")) {
@@ -269,12 +294,17 @@ void Scene::draw() {
         }
         if (ImGui::BeginMenu("Add")) {
             if (ImGui::BeginMenu("Light")) {
-                if (ImGui::MenuItem("Point")) {
-                    typeToAdd = LIGHT_POINT;
-                }
-                if (ImGui::MenuItem("Directional")) {
-                    typeToAdd = LIGHT_DIRECTIONAL;
-                }
+
+                if (ImGui::MenuItem("Point")) typeToAdd = LIGHT_POINT;
+                if (ImGui::MenuItem("Directional")) typeToAdd = LIGHT_DIRECTIONAL;
+
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Entity")) {
+
+                if (ImGui::MenuItem("Terrain")) entityToAdd = TERRAIN;
+                if (ImGui::MenuItem("Rock")) entityToAdd = ROCK;
+
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
@@ -283,7 +313,6 @@ void Scene::draw() {
     }
 
     static bool maxLightsPopupOpen = false;
-
 
     if (typeToAdd != -1) {
 
@@ -339,32 +368,134 @@ void Scene::draw() {
         ImGui::EndPopup();
     }
 
+    if (entityToAdd != -1) {
+        ImGui::OpenPopup("AddEntity");
+        if (ImGui::BeginPopupModal("AddEntity", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
+            if (entityToAdd == TERRAIN) {
+                static TerrainType* _terrain;
+                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+
+                    if (m_context->entities.at(selectedEntity)->e_type == "rock") {
+                        _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
+                    }
+                } else {
+                    _terrain = nullptr;
+                }
+
+                static bool pushed = false;
+                static float width = 10;
+                static float length = 10;
+                static float resX = 20;
+                static float resZ = 20;
+                static bool shouldUpdate = false;
+
+                if (!pushed || shouldUpdate) {
+                    if (shouldUpdate) m_context->entities.pop_back();
+                    shouldUpdate = false;
+                    m_context->entities.emplace_back(std::make_unique<TerrainType>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
+                    selectedEntity = static_cast<int>(m_context->entities.size() - 1);
+                    _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
+                    _terrain->noiseType = "perlin";
+                    pushed = true;
+                }
+
+                m_context->fontMgr.setXL();
+                ImGui::Text("Terrain Settings");
+                ImGui::PopFont();
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+
+                m_context->entities.at(selectedEntity)->UpdateBuffers();
+                ImGui::PushItemWidth(340);
+
+                ImGui::PopItemWidth();
+
+                m_context->fontMgr.setLG();
+                ImGui::Text("General");
+                ImGui::PopFont();
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Text("Width");
+                ImGui::SameLine();
+
+                ImGui::Dummy(ImVec2(125, 0));
+                ImGui::SameLine();
+                ImGui::Text("Resolution X");
+
+                ImGui::PushItemWidth(165);
+                shouldUpdate |= ImGui::InputFloat("##Width", &width);
+
+                ImGui::SameLine();
+                shouldUpdate |= ImGui::InputFloat("##Resolution X", &resX);
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Text("Length");
+                ImGui::SameLine();
+
+                ImGui::Dummy(ImVec2(125, 0));
+                ImGui::SameLine();
+                ImGui::Text("Resolution Z");
+
+                shouldUpdate |= ImGui::InputFloat("##Length", &length);
+
+                ImGui::SameLine();
+                shouldUpdate |= ImGui::InputFloat("##Resolution Z", &resZ);
+                ImGui::PopItemWidth();
+
+                ImGui::Dummy(ImVec2(0, 5));
+
+                if (ImGui::Button("Create")) {
+                    ImGui::CloseCurrentPopup();
+                    entityToAdd = -1;
+                }
+            // ----------------
+            //      ROCK
+            // ----------------
+            } else if (entityToAdd == ROCK) {
+                static RockType* _rock;
+                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+
+                    if (m_context->entities.at(selectedEntity)->e_type == "rock") {
+                        _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+                    }
+                } else {
+                    _rock = nullptr;
+                }
+
+                static bool pushed = false;
+
+                if (!pushed) {
+                    m_context->entities.emplace_back(std::make_unique<RockType>(customMeshes.GenMeshIcosahedron(), "rock", "rock"));
+                    selectedEntity = static_cast<int>(m_context->entities.size() - 1);
+                    _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+                    m_context->entities.at(selectedEntity)->e_boundingBox = m_context->entities.at(selectedEntity)->GenMeshBoundingBox(*m_context->entities.at(selectedEntity)->e_mesh, m_context->entities.at(selectedEntity)->e_position);
+                    pushed = true;
+                }
+
+                m_context->fontMgr.setXL();
+                ImGui::Text("Rock Settings");
+                ImGui::PopFont();
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+
+                m_context->entities.at(selectedEntity)->UpdateBuffers();
+
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Additional settings not necessary!");
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Everything provided after creating the mesh!");
+
+                ImGui::Dummy(ImVec2(0, 5));
+
+                if (ImGui::Button("Create")) {
+                    ImGui::CloseCurrentPopup();
+                    entityToAdd = -1;
+                }
+            }
+            ImGui::EndPopup();
+        }
+    }
+
     int mw = GetScreenWidth();
     int mh = GetScreenHeight();
-
-    static float startHoverFreq = 0.0f;
-    static float startHoverAmp = 0.0f;
-
-    static float startHoverOct = 0.0f;
-    static float startHoverPer = 0.0f;
-    static float startHoverLac = 0.0f;
-
-    static char searchBuffer[40] = "";
-    static bool inputActive = false;
-    static bool shouldFocus = false;
-
-    static bool shouldUpdateBuffers = false;
-
-    static bool searchEnterPressed = false;
-    static bool searchJustActivated = false;
-
-    const char* shapers[] = { "", "Subdivision" };
-    static int selectedShaper = 0;
-
-    const char* noiseTypes[] = { "BasicPerlin", "Octave" };
-    const char* rockTypes[] = { "Basic Rock" };
-    static int selectedNoiseType = 0;
-    static int selectedRockType = 0;
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
@@ -818,7 +949,7 @@ void Scene::draw() {
             }
 
             ImGui::Dummy(ImVec2(0, 5));
-            m_context->fontMgr.setMD();
+            m_context->fontMgr.setLG();
             ImGui::Text("Noise");
             ImGui::PopFont();
 
@@ -866,278 +997,6 @@ void Scene::draw() {
     ImGui::ColorEdit3("##VoidColorRenderEdit", reinterpret_cast<float *>(&voidColRen));
     ImGui::Text("Wireframe");
     ImGui::ColorEdit3("##VoidColorWireframeEdit", reinterpret_cast<float *>(&voidColWir));
-
-    // ENTITY ADD
-    ImGui::Dummy(ImVec2(0, 5));
-    ImGui::SetCursorPos(ImVec2(10, mh - 100));
-    m_context->fontMgr.setXL();
-    static int selectedEntityType = 0;
-    if (ImGui::Button("Add Entity", ImVec2(380, 40))) {
-        ImGui::OpenPopup("Add Entity");
-        selectedEntityType = 0;
-
-    }
-    ImGui::PopFont();
-    if (ImGui::BeginPopupModal("Add Entity", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
-        m_context->fontMgr.setXL();
-        ImGui::Text("Add Entity");
-        ImGui::PopFont();
-
-        ImGui::Dummy(ImVec2(0, 5));
-        const char* entityTypes[] = { "", "Terrain", "Rock" };
-        ImGui::Text("Choose Entity Type");
-        ImGui::Combo("##Choose-Entity-Type", &selectedEntityType, entityTypes, IM_ARRAYSIZE(entityTypes));
-
-        ImGui::Dummy(ImVec2(0, 5));
-        ImGui::Separator();
-        ImGui::Dummy(ImVec2(0, 5));
-
-        static bool pushed = false;
-
-        if (selectedEntityType == 0) {
-            if (pushed) m_context->entities.pop_back();
-            pushed = false;
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Select Entity Type To View Additional Settings Here!");
-        } else if (selectedEntityType == 1) {
-
-            static TerrainType* _terrain;
-            if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-
-                if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-                    _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
-                }
-            } else {
-                _terrain = nullptr;
-            }
-
-            static float width = 10;
-            static float length = 10;
-            static float resX = 20;
-            static float resZ = 20;
-            static bool shouldUpdate = false;
-            if (!pushed || shouldUpdate) {
-                if (shouldUpdate) m_context->entities.pop_back();
-                shouldUpdate = false;
-                m_context->entities.emplace_back(std::make_unique<TerrainType>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
-                selectedEntity = static_cast<int>(m_context->entities.size() - 1);
-                _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
-                _terrain->noiseType = "perlin";
-                pushed = true;
-            }
-
-            m_context->fontMgr.setMD();
-            ImGui::Text("Terrain Settings");
-            ImGui::PopFont();
-
-            ImGui::Dummy(ImVec2(0, 5));
-            ImGui::Text("Choose Noise Type");
-            ImGui::Combo("##Choose-Noise-Type", &selectedNoiseType, noiseTypes, IM_ARRAYSIZE(noiseTypes));
-
-            if (selectedNoiseType == 0) {
-                _terrain->noiseType = "perlin";
-
-            } else if (selectedNoiseType == 1) {
-                _terrain->noiseType = "octave";
-
-            }
-
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            noise.frequency = _terrain->frequency;
-            noise.amplitude = _terrain->amplitude;
-            noise.lacunarity = _terrain->lacunarity;
-            noise.octaves = _terrain->octaves;
-            noise.persistence = _terrain->persistence;
-
-            int vertexCount = (int)m_context->entities.at(selectedEntity)->e_vertices.size() / 3;
-            for (int i = 0; i < vertexCount; i++) {
-                float x = m_context->entities.at(selectedEntity)->e_vertices[i * 3];
-                float z = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
-
-                if (_terrain->noiseType == "perlin") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getBasicPerlinTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
-
-                } else if (_terrain->noiseType == "octave") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getOctaveTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
-
-                }
-            }
-
-            m_context->entities.at(selectedEntity)->UpdateBuffers();
-            ImGui::PushItemWidth(340);
-
-            // Same variables as startHover... but the timer broke (two variables controlling it) and the tooltip
-            // was not showing so these are to have one variable - one timer
-            static float hoverFreq = 0.0f;
-            static float hoverAmp = 0.0f;
-            static float hoverPer = 0.0f;
-            static float hoverLac = 0.0f;
-            static float hoverOct = 0.0f;
-
-            ImGui::Dummy(ImVec2(0, 5));
-            ImGui::Text("Frequency");
-            shouldUpdateBuffers |= ImGui::SliderFloat("##Frequency", &_terrain->frequency, 0.01f, 1.0f);
-
-            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                if (hoverFreq == 0.0f) hoverFreq = ImGui::GetTime();
-
-                if (ImGui::GetTime() - hoverFreq > hoverDelay) {
-                    ImGui::BeginTooltip();
-                    ImGui::Text("Frequency controls how fast the waves change");
-                    ImGui::EndTooltip();
-                }
-            } else {
-                hoverFreq = 0.0f;
-            }
-
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::Text("Amplitude");
-            shouldUpdateBuffers |= ImGui::SliderFloat("##Amplitude", &_terrain->amplitude, -20.0f, 20.0f);
-
-            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                if (hoverAmp == 0.0f) hoverAmp = ImGui::GetTime();
-
-                if (ImGui::GetTime() - hoverAmp > hoverDelay) {
-                    ImGui::BeginTooltip();
-                    ImGui::Text("Amplitude controls how tall the bumps are");
-                    ImGui::EndTooltip();
-                }
-            } else {
-                hoverAmp = 0.0f;
-            }
-
-            if (selectedNoiseType == 1) {
-                ImGui::Dummy(ImVec2(0, 2.5f));
-                ImGui::Text("Lacunarity");
-                shouldUpdateBuffers |= ImGui::SliderFloat("##Lacunarity", &_terrain->lacunarity, 0.01f, 10.0f);
-
-                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                    if (hoverLac == 0.0f) hoverLac = ImGui::GetTime();
-
-                    if (ImGui::GetTime() - hoverLac > hoverDelay) {
-                        ImGui::BeginTooltip();
-                        ImGui::Text("Lacunarity increases frequency each octave");
-                        ImGui::EndTooltip();
-                    }
-                } else {
-                    hoverLac = 0.0f;
-                }
-
-                ImGui::Dummy(ImVec2(0, 2.5f));
-                ImGui::Text("Persistence");
-                shouldUpdateBuffers |= ImGui::SliderFloat("##Persistence", &_terrain->persistence, 0.01f, 1.0f);
-
-                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                    if (hoverPer == 0.0f) hoverPer = ImGui::GetTime();
-
-                    if (ImGui::GetTime() - hoverPer > hoverDelay) {
-                        ImGui::BeginTooltip();
-                        ImGui::Text("Persistence reduces amplitude each octave");
-                        ImGui::EndTooltip();
-                    }
-                } else {
-                    hoverPer = 0.0f;
-                }
-
-                ImGui::Dummy(ImVec2(0, 2.5f));
-                ImGui::Text("Octaves");
-                ImGui::SliderInt("##Octaves", &_terrain->octaves, 1, 32);
-
-                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                    if (hoverOct == 0.0f) hoverOct = ImGui::GetTime();
-
-                    if (ImGui::GetTime() - hoverOct > hoverDelay) {
-                        ImGui::BeginTooltip();
-                        ImGui::Text("Octaves control how many layers of detail are");
-                        ImGui::EndTooltip();
-                    }
-                } else {
-                    hoverOct = 0.0f;
-                }
-
-            }
-
-            ImGui::PopItemWidth();
-
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::Text("Width");
-            ImGui::SameLine();
-
-            ImGui::Dummy(ImVec2(125, 0));
-            ImGui::SameLine();
-            ImGui::Text("Resolution X");
-
-            ImGui::PushItemWidth(165);
-            shouldUpdate |= ImGui::InputFloat("##Width", &width);
-
-            ImGui::SameLine();
-            shouldUpdate |= ImGui::InputFloat("##Resolution X", &resX);
-
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::Text("Length");
-            ImGui::SameLine();
-
-            ImGui::Dummy(ImVec2(125, 0));
-            ImGui::SameLine();
-            ImGui::Text("Resolution Z");
-
-            shouldUpdate |= ImGui::InputFloat("##Length", &length);
-
-            ImGui::SameLine();
-            shouldUpdate |= ImGui::InputFloat("##Resolution Z", &resZ);
-            ImGui::PopItemWidth();
-
-            ImGui::Text("Seed Value");
-            ImGui::Checkbox("Use Seed", &m_context->entities.at(selectedEntity)->e_seedEnable);
-
-            int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
-
-            bool shouldUpdateSeedValue = ImGui::InputInt("##SeedValInput", &seedVal);
-            if (seedVal < -10000) seedVal = -10000;
-            if (seedVal > 10000) seedVal = 10000;
-            if (shouldUpdateSeedValue) noise.updateSeedValue(seedVal);
-            if (ImGui::Button("Generate New Seed ##NewSeedValBtn")) {
-                m_context->entities.at(selectedEntity)->e_seed = noise.genNewSeedValue();
-            }
-        } else if (selectedEntityType == 2) {
-            static RockType* _rock;
-            if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-                if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-                    _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
-                }
-            } else {
-                _rock = nullptr;
-            }
-
-            if (!pushed) {
-                // TODO: Add options to choose primitive for rock and generate a bounding box for it
-                m_context->entities.emplace_back(std::make_unique<RockType>(customMeshes.GenMeshIcosahedron(), "rock", "rock"));
-                selectedEntity = static_cast<int>(m_context->entities.size() - 1);
-                _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
-                pushed = true;
-            }
-
-            m_context->fontMgr.setMD();
-            ImGui::Text("Rock Settings");
-            ImGui::PopFont();
-        }
-
-        ImGui::Dummy(ImVec2(0, 5));
-        if (selectedEntityType != 0 && ImGui::Button("Create")) {
-            pushed = false;
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::SetCursorPos(ImVec2(350, 10));
-        if (ImGui::Button("X")) {
-            if (selectedEntityType != 0) {
-                m_context->entities.pop_back();
-                selectedEntity = -1;
-            }
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
 
     // ADVANCED SETTINGS
     ImGui::SetCursorPos(ImVec2(10, mh - 50));
