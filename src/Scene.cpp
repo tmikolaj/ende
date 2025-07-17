@@ -447,6 +447,7 @@ void Scene::draw() {
                 if (ImGui::Button("Create")) {
                     ImGui::CloseCurrentPopup();
                     entityToAdd = -1;
+                    pushed = false;
                 }
             // ----------------
             //      ROCK
@@ -488,6 +489,7 @@ void Scene::draw() {
                 if (ImGui::Button("Create")) {
                     ImGui::CloseCurrentPopup();
                     entityToAdd = -1;
+                    pushed = false;
                 }
             }
             ImGui::EndPopup();
@@ -762,29 +764,28 @@ void Scene::draw() {
         ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
 
-        static int subdivisions = 0;
-        bool incrementSubdivisions = false;
-
         if (selectedShaper != 0) {
             if (!checkIfHasShaper(typeid(SubdivisionShaper))) {
                 m_context->entities.at(selectedEntity)->e_shapers.push_back(new SubdivisionShaper(m_context->entities.at(selectedEntity).get(), m_context->entities.at(selectedEntity)->e_type != "terrain"));
             }
 
-            std::string subLabel = "Subdivision level: " + std::to_string(subdivisions);
+            Shaper* baseShaper = m_context->entities.at(selectedEntity)->e_shapers.at(0);
+            auto* _subdivisionShaper = dynamic_cast<SubdivisionShaper*>(baseShaper);
+
+            std::string subLabel = "Subdivision level: " + std::to_string(_subdivisionShaper->subdivisions);
             ImGui::Text(subLabel.c_str());
 
             ImGui::Dummy(ImVec2(0, 2.5f));
-            if (subdivisions >= 3) ImGui::BeginDisabled();
+
+            bool shouldDisableSubdivision = _subdivisionShaper->subdivisions >= 3;
+
+            if (shouldDisableSubdivision) ImGui::BeginDisabled();
             if (ImGui::Button("Subdivide")) {
                 m_context->entities.at(selectedEntity)->e_shapers.at(0)->Apply(m_context->entities.at(selectedEntity));
                 m_context->entities.at(selectedEntity)->UpdateBuffers();
-                incrementSubdivisions = true;
+
             }
-            if (subdivisions >= 3) ImGui::EndDisabled();
-            if (incrementSubdivisions) {
-                subdivisions++;
-                incrementSubdivisions = false;
-            }
+            if (shouldDisableSubdivision) ImGui::EndDisabled();
         }
 
         if (m_context->entities.at(selectedEntity)->e_type == "terrain") {
