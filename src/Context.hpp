@@ -3,6 +3,8 @@
 
 #include "StateManager.hpp"
 #include "Entities/Entity.hpp"
+#include "lLight.hpp"
+#include "FontManager.hpp"
 
 enum WindowState {
     NONE = 0,
@@ -14,10 +16,11 @@ struct Context {
     // TODO:
     std::unique_ptr<Engine::StateManager> states;
     std::vector<std::unique_ptr<Entity>> entities;
+    std::vector<std::unique_ptr<lLight>> llights;
+    Engine::FontManager fontMgr;
 
     Context() : entities(),
     states(std::make_unique<Engine::StateManager>()) {
-
     }
 };
 
