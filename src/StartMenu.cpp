@@ -12,6 +12,7 @@ seedBuffer("") {
 void StartMenu::init() {
     // TODO: Will later load some information
     rlImGuiSetup(true);
+    m_context->fontMgr.init();
 }
 
 void StartMenu::process() {
@@ -30,30 +31,30 @@ void StartMenu::draw() {
 
     ImGui::Begin("Start Menu", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImGui::PushFont(ImGui::GetFont());
-    ImGui::SetWindowFontScale(3.5f);
+    m_context->fontMgr.setTITLE();
     ImGui::SetCursorPosX(30.0f);
     ImGui::SetCursorPosY(20.0f);
     ImGui::TextWrapped("3DProcGen - Start Menu");
     ImGui::Dummy({0, 20});
     ImGui::Separator();
 
-    ImGui::SetWindowFontScale(1.0f);
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 180));
+    ImGui::PopFont();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 200));
     ImGui::SetCursorPosY(25.0f);
 
-    ImGui::SetWindowFontScale(1.1f);
-    if (ImGui::Button("Create New Project", ImVec2(160, 40))) {
+    m_context->fontMgr.setMD();
+    if (ImGui::Button("Create New Project", ImVec2(180, 40))) {
         ImGui::OpenPopup("Create Project");
     }
-    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopFont();
 
     if (ImGui::BeginPopupModal("Create Project", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::SetWindowFontScale(1.6f);
+        m_context->fontMgr.setLG();
         ImGui::Text("Create New Project");
-        ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
 
         ImGui::SameLine();
-        ImGui::Dummy(ImVec2(60, 0));
+        ImGui::Dummy(ImVec2(80, 0));
         ImGui::SameLine();
         if (ImGui::Button("X")) {
             showEmptyNameWarning = false;
@@ -120,14 +121,16 @@ void StartMenu::draw() {
 
     // For now cause saving and loading is not implemented
     // TODO: implement loading and saving
-    ImGui::SetWindowFontScale(2.0f);
+    m_context->fontMgr.setXL();
     ImGui::Text("Projects: ");
-    ImGui::SetWindowFontScale(1.5f);
+    ImGui::PopFont();
+    m_context->fontMgr.setLG();
     ImGui::SetCursorPosX(320.0f);
     ImGui::SetCursorPosY(250.0f);
     ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No projects yet!");
     ImGui::Spacing();
 
+    ImGui::PopFont();
     ImGui::PopFont();
 
     ImGui::End();
