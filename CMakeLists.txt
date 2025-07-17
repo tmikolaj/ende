@@ -43,6 +43,9 @@ add_executable(3DProdGen
         src/Extras/CustomMeshes.hpp
         src/Debug/Normals.cpp
         src/Debug/Normals.hpp
+        src/lLight.hpp
+        src/FontManager.cpp
+        src/FontManager.hpp
 )
 
 target_link_libraries(3DProdGen
