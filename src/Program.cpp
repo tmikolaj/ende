@@ -26,6 +26,7 @@ void Program::run() {
         }
         if (WindowShouldClose()) {
             context->states->getCurrentState()->clean();
+            exit(0);
         }
     }
 }
