@@ -4,9 +4,7 @@
 #include <utility>
 #include "raylib.h"
 #include "raymath.h"
-#define RLIGHTS_IMPLEMENTATION
 #include <algorithm>
-#include "rlights.h"
 #include "external/imgui/imgui.h"
 #include "external/glm/glm.hpp"
 #include "external/glm/gtc/type_ptr.hpp"
