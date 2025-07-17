@@ -373,7 +373,7 @@ void Scene::draw() {
     ImGui::PushItemWidth(200);
 
     // SCENE ENTITIES
-    m_context->fontMgr.setXL();
+    m_context->fontMgr.setXXL();
     ImGui::Text("Scene Entities");
     ImGui::PopFont();
     ImGui::Dummy(ImVec2(0, 5));
@@ -584,12 +584,12 @@ void Scene::draw() {
     // ENTITY SETTINGS
     if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
         ImGui::Dummy(ImVec2(0, 5));
-        m_context->fontMgr.setXL();
+        m_context->fontMgr.setXXL();
         ImGui::Text("Entity Settings");
         ImGui::PopFont();
 
         ImGui::Dummy(ImVec2(0, 5));
-        m_context->fontMgr.setMD();
+        m_context->fontMgr.setLG();
         ImGui::Text("General");
         ImGui::PopFont();
 
@@ -623,21 +623,36 @@ void Scene::draw() {
         ImGui::EndDisabled();
 
         ImGui::Dummy(ImVec2(0, 5));
-        m_context->fontMgr.setMD();
+        m_context->fontMgr.setLG();
         ImGui::Text("Shapers");
         ImGui::PopFont();
 
         ImGui::Text("Choose Shaper");
+        ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
+
+        static int subdivisions = 0;
+        bool incrementSubdivisions = false;
 
         if (selectedShaper != 0) {
             if (!checkIfHasShaper(typeid(SubdivisionShaper))) {
                 m_context->entities.at(selectedEntity)->e_shapers.push_back(new SubdivisionShaper(m_context->entities.at(selectedEntity).get(), m_context->entities.at(selectedEntity)->e_type != "terrain"));
             }
 
+            std::string subLabel = "Subdivision level: " + std::to_string(subdivisions);
+            ImGui::Text(subLabel.c_str());
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            if (subdivisions >= 3) ImGui::BeginDisabled();
             if (ImGui::Button("Subdivide")) {
                 m_context->entities.at(selectedEntity)->e_shapers.at(0)->Apply(m_context->entities.at(selectedEntity));
                 m_context->entities.at(selectedEntity)->UpdateBuffers();
+                incrementSubdivisions = true;
+            }
+            if (subdivisions >= 3) ImGui::EndDisabled();
+            if (incrementSubdivisions) {
+                subdivisions++;
+                incrementSubdivisions = false;
             }
         }
 
@@ -665,7 +680,7 @@ void Scene::draw() {
             }
 
             ImGui::Dummy(ImVec2(0, 5));
-            m_context->fontMgr.setMD();
+            m_context->fontMgr.setLG();
             ImGui::Text("Noise");
             ImGui::PopFont();
 
@@ -761,7 +776,7 @@ void Scene::draw() {
             int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
 
             ImGui::Dummy(ImVec2(0, 5));
-            m_context->fontMgr.setMD();
+            m_context->fontMgr.setLG();
             ImGui::Text("Seed");
             ImGui::PopFont();
 
@@ -838,8 +853,11 @@ void Scene::draw() {
     if (chunkSize > 100.0f) chunkSize = 100.0f;
     ImGui::EndDisabled();
 
-    ImGui::Dummy(ImVec2(0, 2.5f));
+    ImGui::Dummy(ImVec2(0, 5));
+    m_context->fontMgr.setLG();
     ImGui::Text("Void Colors");
+    ImGui::PopFont();
+    ImGui::Dummy(ImVec2(0, 2.5f));
     ImGui::Text("Solid");
     ImGui::ColorEdit3("##VoidColorSolidEdit", reinterpret_cast<float *>(&voidColSol));
     ImGui::Text("Material Preview");
