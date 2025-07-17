@@ -1,11 +1,12 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
+#include <typeinfo>
+#include "raylib.h"
 #include "Context.hpp"
 #include "external/rlImGui/rlImGui.h"
 #include "external/imgui/imgui.h"
 #include "Noise.hpp"
-// #include "rlights.h"
 #include "external/glm/glm.hpp"
 #include "Entities/TerrainType.hpp"
 #include "Entities/RockType.hpp"
@@ -13,6 +14,7 @@
 #include "Shapers/SubdivisionShaper.hpp"
 #include "Extras/CustomMeshes.hpp"
 #include "Debug/Normals.hpp"
+#include "rlights.h"
 
 enum currentShader {
     SOLID = 0,
@@ -27,6 +29,7 @@ private:
 
     // render/draw variables
     int selectedEntity;
+    int selectedLight;
     int currentSh;
     Shader solidShader;
     Shader materialPreviewShader;
@@ -44,6 +47,13 @@ private:
     // camera related variables
     Camera3D camera;
 
+    // lights
+    int currLightsCount = 0;
+    const unsigned short MAX_LIGHTS_COUNT;
+    int ambientLoc;
+    float ambientColor[4];
+    int typeToAdd;
+
     // collision (to check if the entity was hit)
     Ray ray;
 
@@ -52,6 +62,7 @@ private:
     Normals normalController;
 
     bool shouldOpenContextPopup;
+    bool contextForEntity;
     float hoverDelay;
 
     // imgui variables
@@ -98,6 +109,7 @@ public:
 
     Color ImVecToColor(ImVec4 _color);
     void HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_context, const Camera3D& _camera, const std::shared_ptr<Context>& _m_context, Ray _ray);
+    bool checkIfHasShaper(const std::type_info& type) const;
 };
 
 #endif //SCENE_HPP

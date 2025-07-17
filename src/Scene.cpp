@@ -1,9 +1,13 @@
 #include "Scene.hpp"
+#define RLIGHTS_IMPLEMENTATION
+#include "raymath.h"
+#include "rlights.h"
 
 Scene::Scene(std::shared_ptr<Context>& context) :
 m_context(context),
 camera({ 0 }),
-openRenamePopup(false) {
+openRenamePopup(false),
+MAX_LIGHTS_COUNT(32) {
 
 }
 
@@ -13,7 +17,7 @@ void Scene::init() {
     renderShader = LoadShader(TextFormat("../shaders/raylibshaders/lighting.vs"), TextFormat("../shaders/raylibshaders/lighting.fs"));
 
     if (!IsShaderValid(renderShader) || !IsShaderValid(materialPreviewShader) || !IsShaderValid(solidShader)) {
-        throw std::runtime_error("ShaderManager::Engine::ShaderManager::init: Failed to load shader!");
+        throw std::runtime_error("Scene::init: Failed to load shader!");
     }
 
     SetWindowSize(1920, 1080);
@@ -28,8 +32,18 @@ void Scene::init() {
 
     m_context->entities.emplace_back(std::make_unique<TerrainType>(GenMeshPlane(10, 10, 20, 20), "plane", "terrain"));
 
+    // lights init
+    currLightsCount = 0;
+    ambientLoc = GetShaderLocation(renderShader, "ambient");
+    ambientColor[0] = 0.1f;
+    ambientColor[1] = 0.1f;
+    ambientColor[2] = 0.1f;
+    ambientColor[3] = 1.0f;
+    typeToAdd = -1;
+
     // render/shader variables init
     selectedEntity = -1;
+    selectedLight = -1;
     currentSh = 0;
     curr_m = "SOLID";
     onSelectionMeshColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -40,7 +54,7 @@ void Scene::init() {
     lightColor[0] = 1.0f;
     lightColor[1] = 1.0f;
     lightColor[2] = 1.0f;
-    lightDir = glm::normalize(glm::vec3{0.256f, -0.333f, 0.881f});
+    lightDir = glm::normalize(glm::vec3{0.625f, 0.159f, 0.917f});
     lightDirection[0] = lightDir.x;
     lightDirection[1] = lightDir.y;
     lightDirection[2] = lightDir.z;
@@ -84,6 +98,7 @@ void Scene::init() {
     Ray ray = { 0 };
 
     shouldOpenContextPopup = false;
+    contextForEntity = true;
     hoverDelay = 1.0f;
 
     SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
@@ -131,10 +146,18 @@ void Scene::process() {
 
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
+        SetShaderValue(renderShader, GetShaderLocation(renderShader, "numLights"), &currLightsCount, SHADER_UNIFORM_INT);
+        SetShaderValue(renderShader, ambientLoc, ambientColor, SHADER_UNIFORM_VEC4);
     } else if (IsKeyPressed(KEY_F4)) {
 
         curr_m = "WIREFRAME";
         currentSh = WIREFRAME;
+    }
+
+    if (currentSh == RENDER) {
+        Vector3 cameraPos = camera.position;
+        SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+
     }
 }
 
@@ -145,6 +168,11 @@ void Scene::draw() {
     }
 
     BeginDrawing();
+
+    for (int i = 0; i < currLightsCount; i++) {
+        UpdateLightValues(renderShader, m_context->llights.at(i)->_l_light);
+    }
+
     if (currentSh == SOLID) {
         ClearBackground(ImVecToColor(voidColSol));
     } else if (currentSh == M_PREVIEW) {
@@ -198,6 +226,10 @@ void Scene::draw() {
         }
     }
 
+    if ((selectedLight >= 0 && selectedLight < m_context->llights.size()) && m_context->llights.at(selectedLight)->_l_light.enabled) {
+        DrawSphere(m_context->llights.at(selectedLight)->_l_light.position, 0.5f, ImVecToColor(onSelectionMeshColor));
+    }
+
     if (showGrid && currentSh != RENDER) DrawGrid(100, chunkSize);
 
     EndMode3D();
@@ -236,12 +268,75 @@ void Scene::draw() {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Add")) {
-            if (ImGui::MenuItem("Terrain")) {
-
+            if (ImGui::BeginMenu("Light")) {
+                if (ImGui::MenuItem("Point")) {
+                    typeToAdd = LIGHT_POINT;
+                }
+                if (ImGui::MenuItem("Directional")) {
+                    typeToAdd = LIGHT_DIRECTIONAL;
+                }
+                ImGui::EndMenu();
             }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
+    }
+
+    static bool maxLightsPopupOpen = false;
+
+
+    if (typeToAdd != -1) {
+
+        if (currLightsCount >= MAX_LIGHTS_COUNT) {
+            maxLightsPopupOpen = true;
+
+        } else {
+            Vector3 pos = { 10.0f, 10.0f, 10.0f };
+            Vector3 target = { 0.0f, 0.0f, 0.0f };
+            Color color = WHITE;
+            bool reused = false;
+
+            for (auto& lightPtr : m_context->llights) {
+                if (lightPtr->deleted) {
+                    lightPtr->deleted = false;
+                    lightPtr->_l_light.type = typeToAdd;
+                    lightPtr->_l_light.position = pos;
+                    lightPtr->_l_light.color = color;
+                    lightPtr->_l_light.target = target;
+                    lightPtr->_l_light.enabled = true;
+                    lightPtr->name = typeToAdd == LIGHT_POINT ? "point light" : "directional light";
+
+                    UpdateLightValues(renderShader, lightPtr->_l_light);
+                    currLightsCount++;
+                    reused = true;
+                    break;
+                }
+            }
+
+            if (!reused) {
+                Light rawLight = CreateLight(typeToAdd, pos, target, color, renderShader);
+                m_context->llights.push_back(std::make_unique<lLight>(typeToAdd == LIGHT_POINT ? "point light" : "directional light", rawLight));
+                currLightsCount++;
+            }
+
+            int numLightsLoc = GetShaderLocation(renderShader, "numLights");
+            SetShaderValue(renderShader, numLightsLoc, &currLightsCount, SHADER_UNIFORM_INT);
+        }
+
+        typeToAdd = -1;
+    }
+
+    if (maxLightsPopupOpen) {
+        ImGui::OpenPopup("Warning");
+    }
+
+    if (ImGui::BeginPopupModal("Warning", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
+        ImGui::Text("Max lights reached! Sorry for the inconvenience");
+        if (ImGui::Button("OK")) {
+            ImGui::CloseCurrentPopup();
+            maxLightsPopupOpen = false;
+        }
+        ImGui::EndPopup();
     }
 
     int mw = GetScreenWidth();
@@ -278,14 +373,14 @@ void Scene::draw() {
     ImGui::PushItemWidth(200);
 
     // SCENE ENTITIES
-    ImGui::SetWindowFontScale(2.0f);
+    m_context->fontMgr.setXL();
     ImGui::Text("Scene Entities");
-    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopFont();
     ImGui::Dummy(ImVec2(0, 5));
 
     ImGui::PushItemWidth(380);
 
-    ImGui::SetWindowFontScale(1.2f);
+    m_context->fontMgr.setLG();
     if (!inputActive) {
         if (ImGui::Selectable("Search entity...")) {
             inputActive = true;
@@ -306,7 +401,7 @@ void Scene::draw() {
 
         searchJustActivated = false;
     }
-    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopFont();
     ImGui::Dummy(ImVec2(0, 2.5f));
 
     ImGui::PopItemWidth();
@@ -328,38 +423,118 @@ void Scene::draw() {
             }
         }
 
+        ImGui::PushID("Entity" + i);
         if (ImGui::Selectable(m_context->entities.at(i)->e_name.c_str(), selectedEntity == i)) {
             selectedEntity = i;
+            selectedLight = -1;
         }
+        ImGui::PopID();
 
         if ((ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) || shouldOpenContextPopup) {
             if (!shouldOpenContextPopup) selectedEntity = i;
             shouldOpenContextPopup = false;
             ImGui::OpenPopup("Context");
+            contextForEntity = true;
+        }
+    }
+    if (m_context->llights.empty()) {
+        m_context->fontMgr.setMD();
+        ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No lights found!");
+        ImGui::PopFont();
+    } else {
+        for (int i = 0; i < m_context->llights.size(); i++) {
+            if (m_context->llights.at(i)->deleted) continue;
+            ImGui::PushID("Light" + i);
+            if (ImGui::Selectable(m_context->llights.at(i)->name.c_str(), selectedLight == i)) {
+                selectedLight = i;
+                selectedEntity = -1;
+            }
+            ImGui::PopID();
+
+            if ((ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) || shouldOpenContextPopup) {
+                if (!shouldOpenContextPopup) selectedLight = i;
+                shouldOpenContextPopup = false;
+                ImGui::OpenPopup("Context");
+                contextForEntity = false;
+            }
         }
     }
     // ENTITY OPTIONS
     if (ImGui::BeginPopup("Context")) {
-        if (ImGui::MenuItem("Rename")) {
-            if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+        if (contextForEntity) {
+            if (ImGui::MenuItem("Rename")) {
+                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
 
-                strncpy(renameBuffer, m_context->entities.at(selectedEntity)->e_name.c_str(), sizeof(renameBuffer));
-                renameBuffer[sizeof(renameBuffer) - 1] = '\0';
-                openRenamePopup = true;
+                    strncpy(renameBuffer, m_context->entities.at(selectedEntity)->e_name.c_str(), sizeof(renameBuffer));
+                    renameBuffer[sizeof(renameBuffer) - 1] = '\0';
+                    openRenamePopup = true;
+                }
+            }
+            std::string label = m_context->entities.at(selectedEntity)->e_visible ? "Hide" : "Show";
+            if (ImGui::MenuItem(label.c_str())) {
+                m_context->entities.at(selectedEntity)->e_visible = !m_context->entities.at(selectedEntity)->e_visible;
+            }
+            if (ImGui::MenuItem("Delete")) {
+                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+
+                    m_context->entities.erase(m_context->entities.begin() + selectedEntity);
+                    selectedEntity = -1;
+                }
+            }
+        } else {
+            if (ImGui::MenuItem("Rename")) {
+                if (selectedLight >= 0 && selectedLight < m_context->llights.size()) {
+
+                    strncpy(renameBuffer, m_context->llights.at(selectedLight)->name.c_str(), sizeof(renameBuffer));
+                    renameBuffer[sizeof(renameBuffer) - 1] = '\0';
+                    openRenamePopup = true;
+                }
+            }
+            std::string label = m_context->llights.at(selectedLight)->_l_light.enabled ? "Disable" : "Enable";
+            if (ImGui::MenuItem(label.c_str())) {
+                m_context->llights.at(selectedLight)->_l_light.enabled = !m_context->llights.at(selectedLight)->_l_light.enabled;
+                UpdateLightValues(renderShader, m_context->llights.at(selectedLight)->_l_light);
+            }
+            if (ImGui::MenuItem("Delete")) {
+                if (selectedLight >= 0 && selectedLight < m_context->llights.size()) {
+
+                    int lastIndex = currLightsCount - 1;
+
+                    if (selectedLight != lastIndex) {
+                        std::swap(m_context->llights.at(selectedLight), m_context->llights.at(lastIndex));
+
+                        char uniformName[64];
+                        sprintf(uniformName, "lights[%d].enabled", selectedLight);
+                        m_context->llights.at(selectedLight)->_l_light.enabledLoc = GetShaderLocation(renderShader, uniformName);
+
+                        sprintf(uniformName, "lights[%d].type", selectedLight);
+                        m_context->llights.at(selectedLight)->_l_light.typeLoc = GetShaderLocation(renderShader, uniformName);
+
+                        sprintf(uniformName, "lights[%d].position", selectedLight);
+                        m_context->llights.at(selectedLight)->_l_light.positionLoc = GetShaderLocation(renderShader, uniformName);
+
+                        sprintf(uniformName, "lights[%d].target", selectedLight);
+                        m_context->llights.at(selectedLight)->_l_light.targetLoc = GetShaderLocation(renderShader, uniformName);
+
+                        sprintf(uniformName, "lights[%d].color", selectedLight);
+                        m_context->llights.at(selectedLight)->_l_light.colorLoc = GetShaderLocation(renderShader, uniformName);
+
+                        UpdateLightValues(renderShader, m_context->llights.at(selectedLight)->_l_light);
+                    }
+
+                    m_context->llights.at(lastIndex)->deleted = true;
+                    m_context->llights.at(lastIndex)->_l_light.enabled = false;
+
+                    UpdateLightValues(renderShader, m_context->llights.at(lastIndex)->_l_light);
+
+                    selectedLight = -1;
+                    currLightsCount--;
+
+                    int numLightsLoc = GetShaderLocation(renderShader, "numLights");
+                    SetShaderValue(renderShader, numLightsLoc, &currLightsCount, SHADER_UNIFORM_INT);
+                }
             }
         }
-        std::string label = m_context->entities.at(selectedEntity)->e_visible ? "Hide" : "Show";
-        if (ImGui::MenuItem(label.c_str())) {
-            m_context->entities.at(selectedEntity)->e_visible = !m_context->entities.at(selectedEntity)->e_visible;
-        }
-        if (ImGui::MenuItem("Delete")) {
-            if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-
-                m_context->entities.erase(m_context->entities.begin() + selectedEntity);
-                selectedEntity = -1;
-            }
-        }
-
         ImGui::EndPopup();
     }
     if (openRenamePopup) {
@@ -377,13 +552,25 @@ void Scene::draw() {
         static bool showEmptyRenameWarning = false;
         ImGui::SameLine();
         if (ImGui::Button("OK") || renameEnterPressed) {
-            if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-                if (renameBuffer[0] == '\0') {
-                    showEmptyRenameWarning = true;
-                } else {
-                    showEmptyRenameWarning = false;
-                    m_context->entities.at(selectedEntity)->e_name = std::string(renameBuffer);
-                    ImGui::CloseCurrentPopup();
+            if (contextForEntity) {
+                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+                    if (renameBuffer[0] == '\0') {
+                        showEmptyRenameWarning = true;
+                    } else {
+                        showEmptyRenameWarning = false;
+                        m_context->entities.at(selectedEntity)->e_name = std::string(renameBuffer);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+            } else {
+                if (selectedLight >= 0 && selectedLight < m_context->llights.size()) {
+                    if (renameBuffer[0] == '\0') {
+                        showEmptyRenameWarning = true;
+                    } else {
+                        showEmptyRenameWarning = false;
+                        m_context->llights.at(selectedLight)->name = std::string(renameBuffer);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
             }
         }
@@ -397,14 +584,14 @@ void Scene::draw() {
     // ENTITY SETTINGS
     if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
         ImGui::Dummy(ImVec2(0, 5));
-        ImGui::SetWindowFontScale(1.5f);
+        m_context->fontMgr.setXL();
         ImGui::Text("Entity Settings");
-        ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
 
         ImGui::Dummy(ImVec2(0, 5));
-        ImGui::SetWindowFontScale(1.1f);
+        m_context->fontMgr.setMD();
         ImGui::Text("General");
-        ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
 
         ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Text("Entity Color");
@@ -436,18 +623,21 @@ void Scene::draw() {
         ImGui::EndDisabled();
 
         ImGui::Dummy(ImVec2(0, 5));
-        ImGui::SetWindowFontScale(1.1f);
+        m_context->fontMgr.setMD();
         ImGui::Text("Shapers");
-        ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
 
         ImGui::Text("Choose Shaper");
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
 
         if (selectedShaper != 0) {
-            m_context->entities.at(selectedEntity)->e_shapers.push_back(new SubdivisionShaper(m_context->entities.at(selectedEntity).get(), m_context->entities.at(selectedEntity)->e_type != "terrain"));
+            if (!checkIfHasShaper(typeid(SubdivisionShaper))) {
+                m_context->entities.at(selectedEntity)->e_shapers.push_back(new SubdivisionShaper(m_context->entities.at(selectedEntity).get(), m_context->entities.at(selectedEntity)->e_type != "terrain"));
+            }
 
             if (ImGui::Button("Subdivide")) {
                 m_context->entities.at(selectedEntity)->e_shapers.at(0)->Apply(m_context->entities.at(selectedEntity));
+                m_context->entities.at(selectedEntity)->UpdateBuffers();
             }
         }
 
@@ -475,9 +665,9 @@ void Scene::draw() {
             }
 
             ImGui::Dummy(ImVec2(0, 5));
-            ImGui::SetWindowFontScale(1.1f);
+            m_context->fontMgr.setMD();
             ImGui::Text("Noise");
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Choose Noise Type");
@@ -571,9 +761,9 @@ void Scene::draw() {
             int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
 
             ImGui::Dummy(ImVec2(0, 5));
-            ImGui::SetWindowFontScale(1.1f);
+            m_context->fontMgr.setMD();
             ImGui::Text("Seed");
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities.at(selectedEntity)->e_seedEnable);
@@ -613,9 +803,9 @@ void Scene::draw() {
             }
 
             ImGui::Dummy(ImVec2(0, 5));
-            ImGui::SetWindowFontScale(1.1f);
+            m_context->fontMgr.setMD();
             ImGui::Text("Noise");
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Amplitude");
@@ -628,9 +818,9 @@ void Scene::draw() {
     }
     // SCENE SETTINGS
     ImGui::Dummy(ImVec2(0, 5));
-    ImGui::SetWindowFontScale(1.5f);
+    m_context->fontMgr.setXL();
     ImGui::Text("Scene settings");
-    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopFont();
 
     ImGui::Dummy(ImVec2(0, 5));
     ImGui::Checkbox("Show grid", &showGrid);
@@ -662,17 +852,18 @@ void Scene::draw() {
     // ENTITY ADD
     ImGui::Dummy(ImVec2(0, 5));
     ImGui::SetCursorPos(ImVec2(10, mh - 100));
-    ImGui::SetWindowFontScale(1.1f);
+    m_context->fontMgr.setXL();
     static int selectedEntityType = 0;
     if (ImGui::Button("Add Entity", ImVec2(380, 40))) {
         ImGui::OpenPopup("Add Entity");
         selectedEntityType = 0;
 
     }
+    ImGui::PopFont();
     if (ImGui::BeginPopupModal("Add Entity", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
-        ImGui::SetWindowFontScale(2.0f);
+        m_context->fontMgr.setXL();
         ImGui::Text("Add Entity");
-        ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
 
         ImGui::Dummy(ImVec2(0, 5));
         const char* entityTypes[] = { "", "Terrain", "Rock" };
@@ -716,9 +907,9 @@ void Scene::draw() {
                 pushed = true;
             }
 
-            ImGui::SetWindowFontScale(1.1f);
+            m_context->fontMgr.setMD();
             ImGui::Text("Terrain Settings");
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
 
             ImGui::Dummy(ImVec2(0, 5));
             ImGui::Text("Choose Noise Type");
@@ -907,9 +1098,9 @@ void Scene::draw() {
                 pushed = true;
             }
 
-            ImGui::SetWindowFontScale(1.1f);
+            m_context->fontMgr.setMD();
             ImGui::Text("Rock Settings");
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
         }
 
         ImGui::Dummy(ImVec2(0, 5));
@@ -932,15 +1123,15 @@ void Scene::draw() {
 
     // ADVANCED SETTINGS
     ImGui::SetCursorPos(ImVec2(10, mh - 50));
-    ImGui::SetWindowFontScale(1.1f);
+    m_context->fontMgr.setMD();
     if (ImGui::Button("Advanced Settings", ImVec2(380, 40))) {
         ImGui::OpenPopup("AdvancedSettingsPopup");
     }
-    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopFont();
     if (ImGui::BeginPopupModal("AdvancedSettingsPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
-        ImGui::SetWindowFontScale(2.0f);
+        m_context->fontMgr.setXL();
         ImGui::Text("Advanced Settings");
-        ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
         ImGui::SameLine();
         ImGui::SetCursorPos(ImVec2(300, 10));
         if (ImGui::Button("X")) {
@@ -1046,9 +1237,17 @@ void Scene::HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_co
         if (hit.hit && hit.distance < closestHit) {
             closestHit = hit.distance;
             selectedEntity = i;
+            selectedLight = -1;
         }
     }
     if (btn == MOUSE_BUTTON_RIGHT && (selectedEntity >= 0 && selectedEntity < _m_context->entities.size())) {
         e_context = true;
     }
+}
+
+bool Scene::checkIfHasShaper(const std::type_info &type) const {
+    for (const auto* shaper : m_context->entities.at(selectedEntity)->e_shapers) {
+        if (typeid(*shaper) == type) return true;
+    }
+    return false;
 }
