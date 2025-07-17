@@ -2,7 +2,8 @@
 
 SubdivisionShaper::SubdivisionShaper(Entity* _entity, const bool _isCircular) :
 Shaper(_entity),
-isCircular(_isCircular) {
+isCircular(_isCircular),
+subdivisions(0) {
 
 }
 
@@ -32,6 +33,8 @@ int SubdivisionShaper::GetMidpoint(int i1, int i2, std::vector<float>& vertices,
 }
 
 void SubdivisionShaper::Apply(std::unique_ptr<Entity>& e) {
+    subdivisions++;
+
     std::vector<float> newVertices = e->e_vertices;
     std::vector<unsigned short> newIndices;
     std::vector<float> newNormals;

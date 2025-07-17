@@ -14,6 +14,8 @@ public:
     SubdivisionShaper(Entity* _entity, bool _isCircular);
     ~SubdivisionShaper() override = default;
 
+    int subdivisions;
+
     void Apply(std::unique_ptr<Entity>& e) override;
 };
 
