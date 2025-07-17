@@ -23,6 +23,11 @@ enum currentShader {
     WIREFRAME = 3
 };
 
+enum entity {
+    TERRAIN = 0,
+    ROCK = 1,
+};
+
 class Scene : public Engine::bStateTemplate {
 private:
     std::shared_ptr<Context> m_context;
@@ -35,6 +40,7 @@ private:
     Shader materialPreviewShader;
     Shader renderShader;
     std::string curr_m;
+    int entityToAdd;
 
     // shader related variables
     // solid shader
