@@ -69,7 +69,7 @@ void TerrainType::RecalcNormals() {
         glm::vec3 edge1 = v1 - v0;
         glm::vec3 edge2 = v2 - v0;
 
-        glm::vec3 normal = glm::normalize(glm::cross(edge2, edge1));
+        glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
 
         for (unsigned int index : {i0, i1, i2}) {
             e_normals[index * 3] += normal.x;
