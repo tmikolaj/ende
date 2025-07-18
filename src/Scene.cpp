@@ -398,7 +398,7 @@ void Scene::draw() {
     const char* shapers[] = { "", "Subdivision" };
     static int selectedShaper = 0;
 
-    const char* noiseTypes[] = { "BasicPerlin", "Octave" };
+    const char* noiseTypes[] = { "Simple Pattern", "Fractal Noise" };
     const char* rockTypes[] = { "Basic Rock" };
     static int selectedNoiseType = 0;
     static int selectedRockType = 0;
