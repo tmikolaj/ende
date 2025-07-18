@@ -758,10 +758,10 @@ void Scene::draw() {
         ImGui::Dummy(ImVec2(0, 5));
         m_context->fontMgr.setLG();
         ImGui::Text("Shapers");
+        ImGui::Dummy(ImVec2(0, 5));
         ImGui::PopFont();
 
         ImGui::Text("Choose Shaper");
-        ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
 
         if (selectedShaper != 0) {
@@ -912,17 +912,17 @@ void Scene::draw() {
             ImGui::Text("Seed");
             ImGui::PopFont();
 
-            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Dummy(ImVec2(0, 5));
             ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities.at(selectedEntity)->e_seedEnable);
 
             ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Seed Value");
             bool shouldUpdateSeedValue = ImGui::InputInt("##SeedVal", &seedVal);
             if (seedVal < -10000) seedVal = -10000;
             if (seedVal > 10000) seedVal = 10000;
             if (shouldUpdateSeedValue) noise.updateSeedValue(seedVal);
 
             ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::Text("Seed Value");
             if (ImGui::Button("Generate New Seed")) {
                 m_context->entities.at(selectedEntity)->e_seed = noise.genNewSeedValue();
             }
