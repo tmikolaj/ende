@@ -33,6 +33,8 @@ private:
     std::shared_ptr<Context> m_context;
 
     // render/draw variables
+    RenderTexture2D sceneTexture;
+    RenderTexture2D gizmoTexture;
     int selectedEntity;
     int selectedLight;
     int currentSh;
@@ -41,6 +43,8 @@ private:
     Shader renderShader;
     std::string curr_m;
     int entityToAdd;
+    bool isGizmoDragged;
+    bool isGizmoHovered;
 
     // shader related variables
     // solid shader

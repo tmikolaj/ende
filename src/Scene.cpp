@@ -1,6 +1,7 @@
 #include "Scene.hpp"
 #define RLIGHTS_IMPLEMENTATION
 #include "raymath.h"
+#include "rlgl.h"
 #include "rlights.h"
 
 Scene::Scene(std::shared_ptr<Context>& context) :
@@ -13,8 +14,8 @@ MAX_LIGHTS_COUNT(32) {
 
 void Scene::init() {
     materialPreviewShader = LoadShader(nullptr, nullptr);
-    solidShader = LoadShader("../shaders/solid.vs", "../shaders/solid.fs");
-    renderShader = LoadShader(TextFormat("../shaders/raylibshaders/lighting.vs"), TextFormat("../shaders/raylibshaders/lighting.fs"));
+    solidShader = LoadShader("../assets/shaders/solid.vs", "../assets/shaders/solid.fs");
+    renderShader = LoadShader(TextFormat("../assets/shaders/raylibshaders/lighting.vs"), TextFormat("../assets/shaders/raylibshaders/lighting.fs"));
 
     if (!IsShaderValid(renderShader) || !IsShaderValid(materialPreviewShader) || !IsShaderValid(solidShader)) {
         throw std::runtime_error("Scene::init: Failed to load shader!");
@@ -41,7 +42,9 @@ void Scene::init() {
     ambientColor[3] = 1.0f;
     typeToAdd = -1;
 
-    // render/shader variables init
+    // render/draw variables init
+    sceneTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    gizmoTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     selectedEntity = -1;
     selectedLight = -1;
     currentSh = 0;
@@ -49,6 +52,8 @@ void Scene::init() {
     onSelectionMeshColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
     onSelectionWiresColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
     entityToAdd = -1;
+    isGizmoDragged = false;
+    isGizmoHovered = false;
 
     // shader related variables init
     // solid shader
@@ -128,7 +133,7 @@ void Scene::process() {
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         btn = MOUSE_BUTTON_RIGHT;
     }
-    HandleMouseSelection(btn, selectedEntity, shouldOpenContextPopup, camera, m_context, ray);
+    if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, selectedEntity, shouldOpenContextPopup, camera, m_context, ray);
 
     if (IsKeyPressed(KEY_F1)) {
 
@@ -169,6 +174,11 @@ void Scene::draw() {
     }
 
     BeginDrawing();
+
+    // -----------------
+    //   SCENE DRAWING
+    // -----------------
+    BeginTextureMode(sceneTexture);
 
     for (int i = 0; i < currLightsCount; i++) {
         UpdateLightValues(renderShader, m_context->llights.at(i)->_l_light);
@@ -234,6 +244,138 @@ void Scene::draw() {
     if (showGrid && currentSh != RENDER) DrawGrid(100, chunkSize);
 
     EndMode3D();
+
+    // ------------------
+    // END SCENE DRAWING
+    // ------------------
+    EndTextureMode();
+
+    // ---------------
+    //  GIZMO DRAWING
+    // ---------------
+    BeginTextureMode(gizmoTexture);
+    ClearBackground((Color){0, 0, 0, 0});
+
+    BeginMode3D(camera);
+    rlDisableDepthTest();
+
+    static int dragAxis; // X = 0, Y = 1, Z = 2
+    static glm::vec3 dragStartEntityPos;
+    static glm::vec3 dragStartHitPoint;
+
+    if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+        float size = 0.05f * (distance /  5.0f);
+
+        float lineLength = size * 8.0f;
+
+        constexpr Vector3 rlAxisX = { 1, 0, 0 };
+        constexpr Vector3 rlAxisY = { 0, 1, 0 };
+        constexpr Vector3 rlAxisZ = { 0, 0, 1 };
+
+        constexpr glm::vec3 glAxisX = { 1, 0, 0 };
+        constexpr glm::vec3 glAxisY = { 0, 1, 0 };
+        constexpr glm::vec3 glAxisZ = { 0, 0, 1 };
+
+        Vector3 rlEpos(m_context->entities.at(selectedEntity)->e_position[0], m_context->entities.at(selectedEntity)->e_position[1], m_context->entities.at(selectedEntity)->e_position[2]);
+        glm::vec3 glEpos(rlEpos.x, rlEpos.y, rlEpos.z);
+
+        BoundingBox boxX;
+        float boxThickness = 0.5f * size;
+        boxX.min = { fminf(rlEpos.x, rlEpos.x + lineLength) - boxThickness, rlEpos.y - boxThickness, rlEpos.z - boxThickness };
+        boxX.max = { fmaxf(rlEpos.x, rlEpos.x + lineLength) + boxThickness, rlEpos.y + boxThickness, rlEpos.z + boxThickness };
+        BoundingBox boxY;
+        boxY.min = { rlEpos.x - boxThickness, fminf(rlEpos.y, rlEpos.y + lineLength) - boxThickness, rlEpos.z - boxThickness };
+        boxY.max = { rlEpos.x + boxThickness, fmaxf(rlEpos.y, rlEpos.y + lineLength) + boxThickness, rlEpos.z + boxThickness };
+        BoundingBox boxZ;
+        boxZ.min = { rlEpos.x - boxThickness, rlEpos.y - boxThickness, fminf(rlEpos.z, rlEpos.z + lineLength) - boxThickness };
+        boxZ.max = { rlEpos.x + boxThickness, rlEpos.y + boxThickness, fmaxf(rlEpos.z, rlEpos.z + lineLength) + boxThickness };
+
+        DrawLine3D(rlEpos, Vector3Add(rlEpos, Vector3Scale(rlAxisX, lineLength)), RED);
+        DrawCube(Vector3Add(rlEpos, Vector3Scale(rlAxisX, lineLength)), size, size, size, RED);
+
+        DrawLine3D(rlEpos, Vector3Add(rlEpos, Vector3Scale(rlAxisY, lineLength)), GREEN);
+        DrawCube(Vector3Add(rlEpos, Vector3Scale(rlAxisY, lineLength)), size, size, size, GREEN);
+
+        DrawLine3D(rlEpos, Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), BLUE);
+        DrawCube(Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), size, size, size, BLUE);
+
+        Ray gizmoRay = GetScreenToWorldRay(GetMousePosition(), camera);
+        Vector2 mousePos = GetMousePosition();
+
+        RayCollision hitX = GetRayCollisionBox(gizmoRay, boxX);
+        RayCollision hitY = GetRayCollisionBox(gizmoRay, boxY);
+        RayCollision hitZ = GetRayCollisionBox(gizmoRay, boxZ);
+
+        glm::vec3 closestPoint;
+
+        isGizmoHovered = GetRayCollisionBox(gizmoRay, boxX).hit || GetRayCollisionBox(gizmoRay, boxY).hit || GetRayCollisionBox(gizmoRay, boxZ).hit;
+
+        if (!isGizmoDragged && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if (hitX.hit) {
+                isGizmoDragged = true;
+                dragAxis = 0; // X axis = 0
+                dragStartEntityPos = glEpos;
+                dragStartHitPoint = glm::vec3(hitX.point.x, hitX.point.y, hitX.point.z);
+            } else if (hitY.hit) {
+                isGizmoDragged = true;
+                dragAxis = 1; // Y axis = 1
+                dragStartEntityPos = glEpos;
+                dragStartHitPoint = glm::vec3(hitY.point.x, hitY.point.y, hitY.point.z);
+            } else if (hitZ.hit) {
+                isGizmoDragged = true;
+                dragAxis = 2; // Z axis = 2
+                dragStartEntityPos = glEpos;
+                dragStartHitPoint = glm::vec3(hitZ.point.x, hitZ.point.y, hitZ.point.z);
+            }
+        }
+
+        if (isGizmoDragged && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            Ray ray = GetScreenToWorldRay(GetMousePosition(), camera);
+            glm::vec3 rayOrigin = glm::vec3(ray.position.x, ray.position.y, ray.position.z);
+            glm::vec3 rayDirection = glm::normalize(glm::vec3(ray.direction.x, ray.direction.y, ray.direction.z));
+
+            glm::vec3 axisDirection;
+            if (dragAxis == 0) axisDirection = glAxisX;
+            else if (dragAxis == 1) axisDirection = glAxisY;
+            else if (dragAxis == 2) axisDirection = glAxisZ;
+
+            glm::vec3 planeNormal = glm::cross(glm::cross(rayDirection, axisDirection), axisDirection);
+            float denominator = glm::dot(rayDirection, planeNormal);
+
+            if (fabs(denominator) > 1e-6f) {
+                float t = glm::dot(dragStartHitPoint - rayOrigin, planeNormal) / denominator;
+                glm::vec3 hitPoint = rayOrigin + rayDirection * t;
+
+                float offset = glm::dot(hitPoint - dragStartHitPoint, axisDirection);
+                glm::vec3 newPos = dragStartEntityPos + axisDirection * offset;
+
+                m_context->entities.at(selectedEntity)->e_position[0] = newPos.x;
+                m_context->entities.at(selectedEntity)->e_position[1] = newPos.y;
+                m_context->entities.at(selectedEntity)->e_position[2] = newPos.z;
+
+                m_context->entities.at(selectedEntity)->e_boundingBox = m_context->entities.at(selectedEntity)->GenMeshBoundingBox(*m_context->entities.at(selectedEntity)->e_mesh, m_context->entities.at(selectedEntity)->e_position);
+            }
+        }
+
+        if (isGizmoDragged && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            isGizmoDragged = false;
+            dragAxis = -1;
+        }
+    }
+
+    rlEnableDepthTest();
+    EndMode3D();
+
+    // --------------------
+    //  END GIZMO DRAWING
+    // --------------------
+    EndTextureMode();
+
+    Rectangle srcRect = { 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) };
+    Rectangle dstRect = { 0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) };
+
+    DrawTexturePro(sceneTexture.texture, srcRect, dstRect, {0, 0}, 0.0f, WHITE);
+    DrawTexturePro(gizmoTexture.texture, srcRect, dstRect, {0, 0}, 0.0f, WHITE);
 
     rlImGuiBegin();
 
