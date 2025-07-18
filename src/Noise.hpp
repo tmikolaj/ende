@@ -1,5 +1,5 @@
-#ifndef BASICPERLIN_HPP
-#define BASICPERLIN_HPP
+#ifndef NOISE_HPP
+#define NOISE_HPP
 
 #include <cmath>
 #include <random>
@@ -38,4 +38,4 @@ public:
     glm::vec3 getBasicPerlinRock(const glm::vec3& v, bool useSeed);
 };
 
-#endif //BASICPERLIN_HPP
+#endif // NOISE_HPP
