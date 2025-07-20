@@ -46,6 +46,8 @@ add_executable(3DProdGen
         src/lLight.hpp
         src/FontManager.cpp
         src/FontManager.hpp
+        src/UIManager.cpp
+        src/UIManager.hpp
 )
 
 target_link_libraries(3DProdGen
