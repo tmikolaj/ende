@@ -39,3 +39,31 @@ void Engine::FontManager::setXXL() {
 void Engine::FontManager::setTITLE() {
     ImGui::PushFont(title);
 }
+
+ImFont* Engine::FontManager::getXS() {
+    return xs;
+}
+
+ImFont* Engine::FontManager::getSM() {
+    return sm;
+}
+
+ImFont* Engine::FontManager::getMD() {
+    return md;
+}
+
+ImFont* Engine::FontManager::getLG() {
+    return lg;
+}
+
+ImFont* Engine::FontManager::getXL() {
+    return xl;
+}
+
+ImFont* Engine::FontManager::getXXL() {
+    return xxl;
+}
+
+ImFont* Engine::FontManager::getTITLE() {
+    return title;
+}

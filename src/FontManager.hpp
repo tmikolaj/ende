@@ -28,6 +28,14 @@ public:
     void setXL();
     void setXXL();
     void setTITLE();
+
+    ImFont* getXS();
+    ImFont* getSM();
+    ImFont* getMD();
+    ImFont* getLG();
+    ImFont* getXL();
+    ImFont* getXXL();
+    ImFont* getTITLE();
 };
 
 }
