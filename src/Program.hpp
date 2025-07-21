@@ -1,8 +1,8 @@
 #ifndef PROGRAM_HPP
 #define PROGRAM_HPP
 
-#include "bStateTemplate.hpp"
-#include "StartMenu.hpp"
+#include "States/bStateTemplate.hpp"
+#include "States/StartMenu.hpp"
 #include "Context.hpp"
 
 class Program {
