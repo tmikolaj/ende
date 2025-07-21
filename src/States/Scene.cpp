@@ -30,8 +30,6 @@ void Scene::init(std::shared_ptr<Context>& m_context) {
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    m_context->entities.emplace_back(std::make_unique<TerrainType>(GenMeshPlane(10, 10, 20, 20), "plane", "terrain"));
-
     // lights init
     currLightsCount = 0;
     ambientLoc = GetShaderLocation(renderShader, "ambient");
@@ -379,6 +377,11 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     DrawTexturePro(sceneTexture.texture, srcRect, dstRect, {0, 0}, 0.0f, WHITE);
     DrawTexturePro(gizmoTexture.texture, srcRect, dstRect, {0, 0}, 0.0f, WHITE);
 
+
+    // -------------------------------
+    //             UI
+    // -------------------------------
+
     rlImGuiBegin();
 
     static float startHoverFreq = 0.0f;
@@ -411,64 +414,19 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     static bool maxLightsPopupOpen = false;
     static bool settingsPopupOpen = false;
 
-    if (ImGui::BeginMainMenuBar()) {
-        if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Close Project")) {
-                m_context->states->requestStateChange(STARTMENU);
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("Preferences")) {
-                settingsPopupOpen = true;
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("View")) {
-            if (ImGui::BeginMenu("Change Shader")) {
-                if (ImGui::MenuItem("Solid", nullptr, currentSh == SOLID)) {
-                    currentSh = SOLID;
-                }
-                if (ImGui::MenuItem("Material Preview", nullptr, currentSh == M_PREVIEW)) {
-                    currentSh = M_PREVIEW;
-                }
-                if (ImGui::MenuItem("Render", nullptr, currentSh == RENDER)) {
-                    currentSh = RENDER;
-                }
-                if (ImGui::MenuItem("Wireframe", nullptr, currentSh == WIREFRAME)) {
-                    currentSh = WIREFRAME;
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Add")) {
-            if (ImGui::BeginMenu("Light")) {
+    int code = m_context->ui->DrawMainMenuBar(m_context, currentSh);
 
-                if (ImGui::MenuItem("Point")) typeToAdd = LIGHT_POINT;
-                if (ImGui::MenuItem("Directional")) typeToAdd = LIGHT_DIRECTIONAL;
-
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Entity")) {
-
-                if (ImGui::MenuItem("Terrain")) entityToAdd = TERRAIN;
-                if (ImGui::MenuItem("Rock")) entityToAdd = ROCK;
-
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenu();
-        }
-        ImGui::EndMainMenuBar();
+    if (code != -1) {
+        if (code == OPEN_SETTINGS) ImGui::OpenPopup("Settings");
+        else if (code == ADD_TERRAIN) entityToAdd = TERRAIN;
+        else if (code == ADD_ROCK) entityToAdd = ROCK;
+        else if (code == ADD_POINT) typeToAdd = LIGHT_POINT;
+        else if (code == ADD_DIRECTIONAL) typeToAdd = LIGHT_DIRECTIONAL;
     }
 
     // ---------
     // SETTINGS
     // ---------
-    if (settingsPopupOpen) {
-        ImGui::OpenPopup("Settings");
-    }
-
     if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
 
         ImGui::Dummy(ImVec2(0, 2.5f));
@@ -720,32 +678,15 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
         }
     }
 
-    float menuHeight = ImGui::GetFrameHeight();
-
-    ImGui::SetNextWindowPos(ImVec2(0, menuHeight));
-    ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - 400, menuHeight));
-
-    ImGui::Begin("##StateTab", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoSavedSettings);
-
-    if (ImGui::BeginTabBar("StateTabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_NoTooltip)) {
-        if (ImGui::BeginTabItem("Scene")) {
-
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Entity Paint")) {
-
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Simulation")) {
-
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-    }
-    ImGui::End();
+    // --------------
+    // STATE TAB BAR
+    // --------------
+    m_context->ui->DrawStateBar(m_context, currentSh, SCENE);
 
     int mw = GetScreenWidth();
     int mh = GetScreenHeight();
+
+    float menuHeight = ImGui::GetFrameHeight();
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, menuHeight), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 1080 - menuHeight), ImGuiCond_Once);
