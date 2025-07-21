@@ -403,6 +403,12 @@ void Scene::draw() {
     static int selectedNoiseType = 0;
     static int selectedRockType = 0;
 
+    static const char* categories[] = { "General", "Camera", "Rendering", "Scene", "Colors" };
+    static int selectedCategory = 0;
+
+    static bool maxLightsPopupOpen = false;
+    static bool settingsPopupOpen = false;
+
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Close Project")) {
@@ -412,7 +418,7 @@ void Scene::draw() {
         }
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("Preferences")) {
-
+                settingsPopupOpen = true;
             }
             ImGui::EndMenu();
         }
@@ -454,8 +460,84 @@ void Scene::draw() {
         ImGui::EndMainMenuBar();
     }
 
-    static bool maxLightsPopupOpen = false;
+    // ---------
+    // SETTINGS
+    // ---------
+    if (settingsPopupOpen) {
+        ImGui::OpenPopup("Settings");
+    }
 
+    if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
+
+        ImGui::Dummy(ImVec2(0, 2.5f));
+        m_context->fontMgr.setXL();
+        ImGui::Text("Preferences");
+        ImGui::PopFont();
+
+        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(390, 0));
+        ImGui::SameLine();
+
+        if (ImGui::Button("X")) {
+            ImGui::CloseCurrentPopup();
+            settingsPopupOpen = false;
+        }
+        ImGui::Dummy(ImVec2(0, 5));
+
+        ImGui::BeginChild("Sidebar", ImVec2(150, 300), true, ImGuiWindowFlags_NoScrollbar);
+
+        for (int i = 0; i < IM_ARRAYSIZE(categories); i++) {
+            if (ImGui::Selectable(categories[i], selectedCategory == i)) {
+                selectedCategory = i;
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+
+        ImGui::BeginChild("SettingsContent", ImVec2(400, 300), true);
+
+        switch (selectedCategory) {
+            case 0:
+                ImGui::Checkbox("Strict Search", &useStrictSearch);
+                break;
+            case 1:
+                uiManager.FloatInput("Zoom Speed", zoomSpeed, true, 1.0f, 50.0f);
+                break;
+            case 2:
+                ImGui::Text("Solid Shader");
+                colorChanged = ImGui::ColorEdit3("##SolidLightColor", lightColor);
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Text("Light Direction");
+                dirChanged = ImGui::SliderFloat3("##SolidLightDirection", lightDirection, -1.0f, 1.0f);
+
+                break;
+            case 3:
+                ImGui::Checkbox("Show Vertex Normals", &showVertexNormals);
+                ImGui::Checkbox("Show Face Normals", &showFaceNormals);
+                ImGui::Checkbox("Show Edge Normals", &showEdgeNormals);
+                if (showEdgeNormals || showFaceNormals || showVertexNormals) {
+                    ImGui::BeginDisabled();
+                    uiManager.FloatSlider("Normals Length", length, 0.1f, 5.0f);
+                    ImGui::EndDisabled();
+                }
+                break;
+            case 4:
+                ImGui::ColorEdit3("Selection Mesh", reinterpret_cast<float*>(&onSelectionMeshColor));
+                ImGui::ColorEdit3("Selection Wires", reinterpret_cast<float*>(&onSelectionWiresColor));
+                break;
+            default:
+                break;
+        }
+
+        ImGui::EndChild();
+
+        ImGui::EndPopup();
+    }
+
+    // -----------
+    // ENTITY ADD
+    // -----------
     if (typeToAdd != -1) {
 
         if (currLightsCount >= MAX_LIGHTS_COUNT) {
@@ -648,10 +730,7 @@ void Scene::draw() {
     ImGui::PushItemWidth(200);
 
     // SCENE ENTITIES
-    m_context->fontMgr.setXXL();
-    ImGui::Text("Scene Entities");
-    ImGui::PopFont();
-    ImGui::Dummy(ImVec2(0, 5));
+    uiManager.Section("Scene Entities", m_context->fontMgr.getXXL());
 
     ImGui::PushItemWidth(380);
 
@@ -858,17 +937,11 @@ void Scene::draw() {
     }
     // ENTITY SETTINGS
     if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-        ImGui::Dummy(ImVec2(0, 5));
-        m_context->fontMgr.setXXL();
-        ImGui::Text("Entity Settings");
-        ImGui::PopFont();
+        uiManager.Section("Entity Settings", m_context->fontMgr.getXL());
 
+        uiManager.Section("General", m_context->fontMgr.getLG(), 0);
         ImGui::Dummy(ImVec2(0, 5));
-        m_context->fontMgr.setLG();
-        ImGui::Text("General");
-        ImGui::PopFont();
 
-        ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Text("Entity Color");
         ImGui::ColorEdit3("Mesh color", reinterpret_cast<float*>(&m_context->entities.at(selectedEntity)->e_colorValues));
         m_context->entities.at(selectedEntity)->e_color = m_context->entities.at(selectedEntity)->ImVecToColor(m_context->entities.at(selectedEntity)->e_colorValues);
@@ -897,11 +970,7 @@ void Scene::draw() {
         ImGui::Checkbox("Show Wires", &showWires);
         ImGui::EndDisabled();
 
-        ImGui::Dummy(ImVec2(0, 5));
-        m_context->fontMgr.setLG();
-        ImGui::Text("Shapers");
-        ImGui::Dummy(ImVec2(0, 5));
-        ImGui::PopFont();
+        uiManager.Section("Shapers", m_context->fontMgr.getLG());
 
         ImGui::Text("Choose Shaper");
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
@@ -953,10 +1022,7 @@ void Scene::draw() {
                 }
             }
 
-            ImGui::Dummy(ImVec2(0, 5));
-            m_context->fontMgr.setLG();
-            ImGui::Text("Noise");
-            ImGui::PopFont();
+            uiManager.Section("Noise", m_context->fontMgr.getLG());
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Choose Noise Type");
@@ -968,91 +1034,27 @@ void Scene::draw() {
                 terrain->noiseType = "octave";
             }
 
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::PushItemWidth(300);
-            shouldUpdateBuffers |= ImGui::SliderFloat("Frequency", &terrain->frequency, 0.01f, 1.0f);
+            shouldUpdateBuffers |= uiManager.FloatSlider("Frequency", terrain->frequency, 0.01f, 1.0f);
+            uiManager.SetItemTooltip("Frequency controls how fast the waves change", startHoverFreq, hoverDelay);
 
-            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                if (startHoverFreq == 0.0f) startHoverFreq = ImGui::GetTime();
-
-                if (ImGui::GetTime() - startHoverFreq > hoverDelay) {
-                    ImGui::BeginTooltip();
-                    ImGui::Text("Frequency controls how fast the waves change");
-                    ImGui::EndTooltip();
-                }
-            } else {
-                startHoverFreq = 0.0f;
-            }
-
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            shouldUpdateBuffers |= ImGui::SliderFloat("Amplitude ##setamp", &terrain->amplitude, -20.0f, 20.0f);
-
-            if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                if (startHoverAmp == 0.0f) startHoverAmp = ImGui::GetTime();
-
-                if (ImGui::GetTime() - startHoverAmp > hoverDelay) {
-                    ImGui::BeginTooltip();
-                    ImGui::Text("Amplitude controls how tall the bumps are");
-                    ImGui::EndTooltip();
-                }
-            } else {
-                startHoverAmp = 0.0f;
-            }
+            shouldUpdateBuffers |= uiManager.FloatSlider("Amplitude", terrain->amplitude, 0.1f, 10.0f);
+            uiManager.SetItemTooltip("Amplitude controls how tall the bumps are", startHoverAmp);
 
             if (selectedNoiseType == 1) {
 
-                ImGui::Dummy(ImVec2(0, 2.5f));
-                shouldUpdateBuffers |= ImGui::SliderFloat("Lacunarity ##setlac", &terrain->lacunarity, 0.01f, 10.0f);
+                shouldUpdateBuffers |= uiManager.FloatSlider("Lacunarity", terrain->lacunarity, 0.01f, 10.0f);
+                uiManager.SetItemTooltip("Lacunarity increases frequency each octave", startHoverLac, hoverDelay);
 
-                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                    if (startHoverLac == 0.0f) startHoverLac = ImGui::GetTime();
+                shouldUpdateBuffers |= uiManager.FloatSlider("Persistence", terrain->persistence, 0.01f, 1.0f);
+                uiManager.SetItemTooltip("Persistence reduces amplitude each octave", startHoverPer, hoverDelay);
 
-                    if (ImGui::GetTime() - startHoverLac > hoverDelay) {
-                        ImGui::BeginTooltip();
-                        ImGui::Text("Lacunarity increases frequency each octave");
-                        ImGui::EndTooltip();
-                    }
-                } else {
-                    startHoverLac = 0.0f;
-                }
-
-                ImGui::Dummy(ImVec2(0, 2.5f));
-                shouldUpdateBuffers |= ImGui::SliderFloat("Persistence ##setper", &terrain->persistence, 0.01f, 1.0f);
-
-                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                    if (startHoverPer == 0.0f) startHoverPer = ImGui::GetTime();
-
-                    if (ImGui::GetTime() - startHoverPer > hoverDelay) {
-                        ImGui::BeginTooltip();
-                        ImGui::Text("Persistence reduces amplitude each octave");
-                        ImGui::EndTooltip();
-                    }
-                } else {
-                    startHoverPer = 0.0f;
-                }
-
-                ImGui::Dummy(ImVec2(0, 2.5f));
-                shouldUpdateBuffers |= ImGui::SliderInt("Octaves ##setoct", &terrain->octaves, 1, 32);
-
-                if (ImGui::IsItemHovered() && !ImGui::IsItemActive()) {
-                    if (startHoverOct == 0.0f) startHoverOct = ImGui::GetTime();
-
-                    if (ImGui::GetTime() - startHoverOct > hoverDelay) {
-                        ImGui::BeginTooltip();
-                        ImGui::Text("Octaves control how many layers of detail are");
-                        ImGui::EndTooltip();
-                    }
-                } else {
-                    startHoverOct = 0.0f;
-                }
+                shouldUpdateBuffers |= uiManager.IntSlider("Octaves", terrain->octaves, 1, 12);
+                uiManager.SetItemTooltip("Octaves control how many laters of detail are", startHoverOct);
 
             }
             int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
 
-            ImGui::Dummy(ImVec2(0, 5));
-            m_context->fontMgr.setLG();
-            ImGui::Text("Seed");
-            ImGui::PopFont();
+            uiManager.Section("Seed", m_context->fontMgr.getLG());
 
             ImGui::Dummy(ImVec2(0, 5));
             ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities.at(selectedEntity)->e_seedEnable);
@@ -1140,69 +1142,6 @@ void Scene::draw() {
     ImGui::ColorEdit3("##VoidColorRenderEdit", reinterpret_cast<float *>(&voidColRen));
     ImGui::Text("Wireframe");
     ImGui::ColorEdit3("##VoidColorWireframeEdit", reinterpret_cast<float *>(&voidColWir));
-
-    // ADVANCED SETTINGS
-    ImGui::SetCursorPos(ImVec2(10, mh - 50));
-    m_context->fontMgr.setMD();
-    if (ImGui::Button("Advanced Settings", ImVec2(380, 40))) {
-        ImGui::OpenPopup("AdvancedSettingsPopup");
-    }
-    ImGui::PopFont();
-    if (ImGui::BeginPopupModal("AdvancedSettingsPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
-        m_context->fontMgr.setXL();
-        ImGui::Text("Advanced Settings");
-        ImGui::PopFont();
-        ImGui::SameLine();
-        ImGui::SetCursorPos(ImVec2(300, 10));
-        if (ImGui::Button("X")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::PushItemWidth(200);
-        ImGui::Dummy(ImVec2(0, 5));
-        if (ImGui::CollapsingHeader("Camera")) {
-            ImGui::Text("Zoom Speed");
-            ImGui::SliderFloat("##ZoomSpeedSlider", &zoomSpeed, 1.0f, 50.0f);
-            ImGui::SameLine();
-            ImGui::PushItemWidth(80);
-            ImGui::InputFloat("##ZoomSpeedInput", &zoomSpeed);
-            ImGui::PopItemWidth();
-            if (zoomSpeed < 1.0f) zoomSpeed = 1.0f;
-            if (zoomSpeed > 50.0f) zoomSpeed = 50.0f;
-        }
-        if (ImGui::CollapsingHeader("Solid Shader")) {
-            ImGui::Text("Light Color");
-            colorChanged = ImGui::ColorEdit3("##SolidLightColor", lightColor);
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::Text("Light Direction");
-            dirChanged = ImGui::SliderFloat3("##SolidLightDirection", lightDirection, -1.0f, 1.0f);
-        }
-        if (ImGui::CollapsingHeader("Color Tweaking")) {
-            ImGui::Text("On Selection Mesh Color");
-            ImGui::ColorEdit3("##OnSelectionMeshColorEdit", reinterpret_cast<float *>(&onSelectionMeshColor));
-            ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::Text("On Selection Wires Color");
-            ImGui::ColorEdit3("##OnSelectionWiresColorEdit", reinterpret_cast<float *>(&onSelectionWiresColor));
-        }
-        if (ImGui::CollapsingHeader("Advanced Scene Settings")) {
-            ImGui::Checkbox("Strict Search", &useStrictSearch);
-            ImGui::Text("Show Normals");
-            ImGui::Checkbox("Vertex", &showVertexNormals);
-            ImGui::Checkbox("Face", &showFaceNormals);
-            ImGui::Checkbox("Edge", &showEdgeNormals);
-            ImGui::Text("Normals length");
-            if (!showFaceNormals && !showVertexNormals && !showEdgeNormals) {
-                ImGui::BeginDisabled();
-            }
-            ImGui::SliderFloat("##NormalsLength", &length, 0.1f, 5.0f);
-            if (!showFaceNormals && !showVertexNormals && !showEdgeNormals) {
-                ImGui::EndDisabled();
-            }
-            ImGui::Text("Normals Color");
-            ImGui::ColorEdit3("##NormalsColor", reinterpret_cast<float *>(&normalsColor));
-        }
-
-        ImGui::EndPopup();
-    }
 
     if (shouldUpdateBuffers && (selectedEntity >= 0 && selectedEntity < m_context->entities.size())) {
         m_context->entities.at(selectedEntity)->UpdateBuffers();
