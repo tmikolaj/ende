@@ -48,6 +48,10 @@ add_executable(3DProdGen
         src/FontManager.hpp
         src/UIManager.cpp
         src/UIManager.hpp
+        src/States/EntityPaint.cpp
+        src/States/EntityPaint.hpp
+        src/AppUI.cpp
+        src/AppUI.hpp
 )
 
 target_link_libraries(3DProdGen
