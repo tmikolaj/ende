@@ -5,6 +5,7 @@
 #include "Entities/Entity.hpp"
 #include "lLight.hpp"
 #include "FontManager.hpp"
+#include "AppUI.hpp"
 
 enum WindowState {
     NONE = 0,
@@ -18,9 +19,11 @@ struct Context {
     std::vector<std::unique_ptr<Entity>> entities;
     std::vector<std::unique_ptr<lLight>> llights;
     Engine::FontManager fontMgr;
+    std::unique_ptr<AppUI> ui;
 
     Context() : states(std::make_unique<Engine::StateManager>()),
-    entities() {
+    entities(),
+    ui(std::make_unique<AppUI>()) {
     }
 };
 
