@@ -12,7 +12,6 @@ void Program::init() {
     context->fontMgr.init();
     context->states->add(std::make_unique<StartMenu>());
     context->states->processState();
-    context->states->getCurrentState()->init(context);
 }
 void Program::run() {
     int w_state = context->states->getWindowState();
