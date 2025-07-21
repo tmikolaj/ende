@@ -24,8 +24,12 @@ private:
     bool m_add;
     bool m_replace;
     bool m_remove;
+    bool m_changePending;
 
     int windowStatus;
+    // Controls how many times all the state function will be executed before processState
+    // which will either remove, add or do nothing
+    unsigned short latency;
 public:
     StateManager();
     ~StateManager() = default;
@@ -36,7 +40,8 @@ public:
     void popCurrent();
     void processState();
     std::unique_ptr<bStateTemplate>& getCurrentState();
-    void requestStateChange(int stateIndex, bool replace = false);
+    void requestStateChange(int stateIndex, bool replace = false, unsigned short changeLatency = 0);
+    bool isChangePending();
 
     void setWindowState(int status);
     int getWindowState();
