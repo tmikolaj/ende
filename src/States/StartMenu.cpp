@@ -1,25 +1,32 @@
 #include "StartMenu.hpp"
 #include "Scene.hpp"
 
-StartMenu::StartMenu(std::shared_ptr<Context>& context) :
-m_context(context),
+StartMenu::StartMenu() :
 nameBuffer{""},
 showEmptyNameWarning(false),
 seedBuffer("") {
 
 }
 
-void StartMenu::init() {
+void StartMenu::init(std::shared_ptr<Context>& m_context) {
     // TODO: Will later load some information
-    rlImGuiSetup(true);
-    m_context->fontMgr.init();
+    SetWindowSize(800, 600);
+
+    int monitor = GetCurrentMonitor();
+    int screenWidth = GetMonitorWidth(monitor);
+    int screenHeight = GetMonitorHeight(monitor);
+
+    int posX = (screenWidth - 800) / 2;
+    int posY = (screenHeight - 600) / 2;
+
+    SetWindowPosition(posX, posY);
 }
 
-void StartMenu::process() {
+void StartMenu::process(std::shared_ptr<Context>& m_context) {
     // TODO: Will later process some loaded information
 }
 
-void StartMenu::draw() {
+void StartMenu::draw(std::shared_ptr<Context>& m_context) {
     BeginDrawing();
     ClearBackground((Color){44, 44, 44, 255});
 
@@ -115,7 +122,7 @@ void StartMenu::draw() {
                 ImGui::CloseCurrentPopup();
                 showEmptyNameWarning = false;
                 noise.init(seedBuffer);
-                m_context->states->add(std::make_unique<Scene>(m_context), true);
+                m_context->states->add(std::make_unique<Scene>(), true);
                 m_context->states->setWindowState(RESTART);
             }
         }
@@ -156,6 +163,6 @@ void StartMenu::draw() {
     EndDrawing();
 }
 
-void StartMenu::clean() {
+void StartMenu::clean(std::shared_ptr<Context>& m_context) {
 
 }
