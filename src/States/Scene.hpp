@@ -3,19 +3,19 @@
 
 #include <typeinfo>
 #include "raylib.h"
-#include "Context.hpp"
+#include "../Context.hpp"
 #include "external/rlImGui/rlImGui.h"
 #include "external/imgui/imgui.h"
-#include "Noise.hpp"
+#include "../Noise.hpp"
 #include "external/glm/glm.hpp"
-#include "Entities/TerrainType.hpp"
-#include "Entities/RockType.hpp"
-#include "Shapers/Shaper.hpp"
-#include "Shapers/SubdivisionShaper.hpp"
-#include "Extras/CustomMeshes.hpp"
-#include "Debug/Normals.hpp"
+#include "../Entities/TerrainType.hpp"
+#include "../Entities/RockType.hpp"
+#include "../Shapers/Shaper.hpp"
+#include "../Shapers/SubdivisionShaper.hpp"
+#include "../Extras/CustomMeshes.hpp"
+#include "../Debug/Normals.hpp"
 #include "rlights.h"
-#include "UIManager.hpp"
+#include "../UIManager.hpp"
 
 enum currentShader {
     SOLID = 0,
@@ -29,10 +29,8 @@ enum entity {
     ROCK = 1,
 };
 
-class Scene : public Engine::bStateTemplate {
+class Scene : public bStateTemplate {
 private:
-    std::shared_ptr<Context> m_context;
-
     // render/draw variables
     RenderTexture2D sceneTexture;
     RenderTexture2D gizmoTexture;
@@ -110,18 +108,17 @@ private:
     float length;
     ImVec4 normalsColor;
 public:
-    explicit Scene(std::shared_ptr<Context>& context);
-    Scene() = default;
+    Scene();
     ~Scene() override = default;
 
-    void init() override;
-    void process() override;
-    void draw() override;
-    void clean() override;
+    void init(std::shared_ptr<Context>& m_context) override;
+    void process(std::shared_ptr<Context>& m_context) override;
+    void draw(std::shared_ptr<Context>& m_context) override;
+    void clean(std::shared_ptr<Context>& m_context) override;
 
     Color ImVecToColor(ImVec4 _color);
     void HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_context, const Camera3D& _camera, const std::shared_ptr<Context>& _m_context, Ray _ray);
-    bool checkIfHasShaper(const std::type_info& type) const;
+    bool checkIfHasShaper(const std::type_info& type, std::shared_ptr<Context>& m_context) const;
 };
 
 #endif //SCENE_HPP
