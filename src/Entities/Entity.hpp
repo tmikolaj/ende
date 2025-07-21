@@ -19,6 +19,16 @@ public:
   		e_model = _model;
   		e_mesh = &e_model.meshes[0];
 
+		if (e_mesh->colors) {
+			MemFree(e_mesh->colors);
+		}
+
+		e_mesh->colors = static_cast<unsigned char*>(MemAlloc(e_mesh->vertexCount * 4));
+		for (int i = 0; i < e_mesh->vertexCount * 4; i ++) {
+			e_mesh->colors[i] = 255;
+		}
+		UploadMesh(e_mesh, true);
+
   		e_seed = 0;
   		e_seedEnable = false;
 
