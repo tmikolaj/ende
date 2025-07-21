@@ -33,10 +33,10 @@ target_link_libraries(rlImGui PUBLIC imgui raylib)
 add_executable(3DProdGen
         main.cpp
         src/Program.cpp
-        src/StartMenu.cpp
+        src/States/StartMenu.cpp
         src/StateManager.cpp
-        src/Scene.cpp
-        src/Scene.hpp
+        src/States/Scene.cpp
+        src/States/Scene.hpp
         src/Noise.cpp
         src/Noise.hpp
         src/Extras/CustomMeshes.cpp
