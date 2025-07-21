@@ -19,8 +19,8 @@ struct Context {
     std::vector<std::unique_ptr<lLight>> llights;
     Engine::FontManager fontMgr;
 
-    Context() : entities(),
-    states(std::make_unique<Engine::StateManager>()) {
+    Context() : states(std::make_unique<Engine::StateManager>()),
+    entities() {
     }
 };
 
