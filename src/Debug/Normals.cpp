@@ -1,7 +1,4 @@
 #include "Normals.hpp"
-
-#include <numeric>
-
 #include "../../external/raylib/src/raymath.h"
 
 void Normals::DrawVertexNormals(const Mesh& mesh, float length, Color color) {
