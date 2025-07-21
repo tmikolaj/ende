@@ -228,9 +228,6 @@ void Scene::draw() {
         if (selectedEntity == i) {
             if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionMeshColor));
             if (currentSh != SOLID) DrawModelWires(m_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionWiresColor));
-            if (showEdgeNormals) normalController.DrawEdgeNormals(*m_context->entities.at(i)->e_mesh, length, ImVecToColor(normalsColor));
-            if (showFaceNormals) normalController.DrawFaceNormals(*m_context->entities.at(i)->e_mesh, length, ImVecToColor(normalsColor));
-            if (showVertexNormals) normalController.DrawVertexNormals(*m_context->entities.at(i)->e_mesh, length, ImVecToColor(normalsColor));
         } else {
             if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities.at(i)->e_model, epos, 1.0f, m_context->entities.at(i)->e_color);
             if (currentSh != SOLID && (showWires || toggleWireframe || currentSh == WIREFRAME)) DrawModelWires(m_context->entities.at(i)->e_model, epos, 1.0f, RED);
@@ -258,6 +255,12 @@ void Scene::draw() {
 
     BeginMode3D(camera);
     rlDisableDepthTest();
+
+    if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+        if (showEdgeNormals) normalController.DrawEdgeNormals(*m_context->entities.at(selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
+        if (showFaceNormals) normalController.DrawFaceNormals(*m_context->entities.at(selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
+        if (showVertexNormals) normalController.DrawVertexNormals(*m_context->entities.at(selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
+    }
 
     static int dragAxis; // X = 0, Y = 1, Z = 2
     static glm::vec3 dragStartEntityPos;
