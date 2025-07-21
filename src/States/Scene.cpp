@@ -4,15 +4,14 @@
 #include "rlgl.h"
 #include "rlights.h"
 
-Scene::Scene(std::shared_ptr<Context>& context) :
-m_context(context),
+Scene::Scene() :
 camera({ 0 }),
 openRenamePopup(false),
 MAX_LIGHTS_COUNT(32) {
 
 }
 
-void Scene::init() {
+void Scene::init(std::shared_ptr<Context>& m_context) {
     materialPreviewShader = LoadShader(nullptr, nullptr);
     solidShader = LoadShader("../assets/shaders/solid.vs", "../assets/shaders/solid.fs");
     renderShader = LoadShader(TextFormat("../assets/shaders/raylibshaders/lighting.vs"), TextFormat("../assets/shaders/raylibshaders/lighting.fs"));
@@ -115,7 +114,7 @@ void Scene::init() {
     }
 }
 
-void Scene::process() {
+void Scene::process(std::shared_ptr<Context>& m_context) {
     if (!ImGui::GetIO().WantCaptureMouse) {
         distance -= GetMouseWheelMove() * zoomSpeed;
 
@@ -167,7 +166,7 @@ void Scene::process() {
     }
 }
 
-void Scene::draw() {
+void Scene::draw(std::shared_ptr<Context>& m_context) {
     if (WindowShouldClose()) {
         m_context->states->setWindowState(EXIT);
         return;
@@ -415,7 +414,7 @@ void Scene::draw() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Close Project")) {
-
+                m_context->states->requestStateChange(STARTMENU);
             }
             ImGui::EndMenu();
         }
@@ -519,11 +518,9 @@ void Scene::draw() {
                 ImGui::Checkbox("Show Vertex Normals", &showVertexNormals);
                 ImGui::Checkbox("Show Face Normals", &showFaceNormals);
                 ImGui::Checkbox("Show Edge Normals", &showEdgeNormals);
-                if (showEdgeNormals || showFaceNormals || showVertexNormals) {
-                    ImGui::BeginDisabled();
+                    if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::BeginDisabled();
                     uiManager.FloatSlider("Normals Length", length, 0.1f, 5.0f);
-                    ImGui::EndDisabled();
-                }
+                    if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::EndDisabled();
                 break;
             case 4:
                 ImGui::ColorEdit3("Selection Mesh", reinterpret_cast<float*>(&onSelectionMeshColor));
@@ -723,16 +720,64 @@ void Scene::draw() {
         }
     }
 
+    float menuHeight = ImGui::GetFrameHeight();
+
+    ImGui::SetNextWindowPos(ImVec2(0, menuHeight));
+    ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - 400, menuHeight));
+
+    ImGui::Begin("##StateTab", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoSavedSettings);
+
+    if (ImGui::BeginTabBar("StateTabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_NoTooltip)) {
+        if (ImGui::BeginTabItem("Scene")) {
+
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Entity Paint")) {
+
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Simulation")) {
+
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+    ImGui::End();
+
     int mw = GetScreenWidth();
     int mh = GetScreenHeight();
 
-    ImGui::SetNextWindowPos(ImVec2(mw - 400, 0), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(400, 1080), ImGuiCond_Once);
+    ImGui::SetNextWindowPos(ImVec2(mw - 400, menuHeight), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(400, 1080 - menuHeight), ImGuiCond_Once);
 
-    ImGui::Begin("Scene Manager", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-    ImGui::PushItemWidth(200);
+    ImGui::Begin("Scene Manager", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
 
+    // --------------
+    //    TAB BAR
+    // --------------
+    ImGui::BeginTabBar("UITabBar", ImGuiTabBarFlags_Reorderable);
+
+    static int currentState = 0;
+    const char* names[] = { "General", "Presets", "Performance & Diagnostics" };
+
+    for (int i = 0; i < IM_ARRAYSIZE(names); i++) {
+        if (ImGui::BeginTabItem(names[i])) {
+            currentState = i;
+            switch (i) {
+                case 0:
+                case 1:
+                case 2:
+                default: break;
+            }
+            ImGui::EndTabItem();
+        }
+    }
+    ImGui::EndTabBar();
+
+    // ---------------
     // SCENE ENTITIES
+    // ---------------
+    ImGui::PushItemWidth(200);
     uiManager.Section("Scene Entities", m_context->fontMgr.getXXL());
 
     ImGui::PushItemWidth(380);
@@ -979,7 +1024,7 @@ void Scene::draw() {
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
 
         if (selectedShaper != 0) {
-            if (!checkIfHasShaper(typeid(SubdivisionShaper))) {
+            if (!checkIfHasShaper(typeid(SubdivisionShaper), m_context)) {
                 m_context->entities.at(selectedEntity)->e_shapers.push_back(new SubdivisionShaper(m_context->entities.at(selectedEntity).get(), m_context->entities.at(selectedEntity)->e_type != "terrain"));
             }
 
@@ -1159,7 +1204,7 @@ void Scene::draw() {
     EndDrawing();
 }
 
-void Scene::clean() {
+void Scene::clean(std::shared_ptr<Context>& m_context) {
     for (auto& entityPtr : m_context->entities) {
         Entity& e = *entityPtr;
 
@@ -1207,7 +1252,7 @@ void Scene::HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_co
     }
 }
 
-bool Scene::checkIfHasShaper(const std::type_info &type) const {
+bool Scene::checkIfHasShaper(const std::type_info &type, std::shared_ptr<Context>& m_context) const {
     for (const auto* shaper : m_context->entities.at(selectedEntity)->e_shapers) {
         if (typeid(*shaper) == type) return true;
     }
