@@ -89,6 +89,7 @@ void Scene::init(std::shared_ptr<Context>& m_context) {
     showFaceNormals = false;
     length = 0.1f;
     normalsColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+    showUV = false;
 
     // collision (to check if the entity was hit) init
     Ray ray = { 0 };
@@ -151,9 +152,25 @@ void Scene::process(std::shared_ptr<Context>& m_context) {
     }
 
     if (currentSh == RENDER) {
+
         Vector3 cameraPos = m_context->camera->position;
         SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+    }
 
+    static bool assignedTexture = false;
+    static int indexAssignedTo = -1;
+    if (showUV && (selectedEntity >= 0 && selectedEntity < m_context->entities.size())) {
+        if (!assignedTexture) {
+            Texture2D checker = uvController.GenerateCheckerTexture();
+            Texture2D curr = m_context->entities.at(selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture;
+            uvController.swapTexture(curr, checker);
+            m_context->entities.at(selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = checker;
+            indexAssignedTo = selectedEntity;
+            assignedTexture = true;
+        }
+    } else if (!showUV && (indexAssignedTo >= 0 && indexAssignedTo < m_context->entities.size())) {
+        m_context->entities.at(indexAssignedTo)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = uvController.swappedTexture;
+        assignedTexture = false;
     }
 }
 
@@ -469,9 +486,10 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::Checkbox("Show Vertex Normals", &showVertexNormals);
                 ImGui::Checkbox("Show Face Normals", &showFaceNormals);
                 ImGui::Checkbox("Show Edge Normals", &showEdgeNormals);
-                    if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::BeginDisabled();
-                    m_context->uiManager->FloatSlider("Normals Length", length, 0.1f, 5.0f);
-                    if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::EndDisabled();
+                if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::BeginDisabled();
+                m_context->uiManager->FloatSlider("Normals Length", length, 0.1f, 5.0f);
+                if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::EndDisabled();
+                ImGui::Checkbox("Check UV (selected entity)", &showUV);
                 break;
             case 4:
                 ImGui::ColorEdit3("Selection Mesh", reinterpret_cast<float*>(&onSelectionMeshColor));
