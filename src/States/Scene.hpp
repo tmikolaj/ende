@@ -15,7 +15,6 @@
 #include "../Extras/CustomMeshes.hpp"
 #include "../Debug/Normals.hpp"
 #include "rlights.h"
-#include "../UIManager.hpp"
 
 enum currentShader {
     SOLID = 0,
@@ -53,9 +52,6 @@ private:
     int uLightDirLoc;
     int uBaseColorLoc;
 
-    // camera related variables
-    Camera3D camera;
-
     // lights
     int currLightsCount = 0;
     const unsigned short MAX_LIGHTS_COUNT;
@@ -69,7 +65,6 @@ private:
     Noise noise;
     CustomMeshes customMeshes;
     Normals normalController;
-    UIManager uiManager;
 
     bool shouldOpenContextPopup;
     bool contextForEntity;
