@@ -14,6 +14,7 @@
 #include "../Shapers/SubdivisionShaper.hpp"
 #include "../Extras/CustomMeshes.hpp"
 #include "../Debug/Normals.hpp"
+#include "../Debug/UV.hpp"
 #include "rlights.h"
 
 enum currentShader {
@@ -65,6 +66,7 @@ private:
     Noise noise;
     CustomMeshes customMeshes;
     Normals normalController;
+    UV uvController;
 
     bool shouldOpenContextPopup;
     bool contextForEntity;
@@ -102,6 +104,7 @@ private:
     bool showFaceNormals;
     float length;
     ImVec4 normalsColor;
+    bool showUV;
 public:
     Scene();
     ~Scene() override = default;
