@@ -5,7 +5,6 @@
 #include "rlights.h"
 
 Scene::Scene() :
-camera({ 0 }),
 openRenamePopup(false),
 MAX_LIGHTS_COUNT(32) {
 
@@ -23,12 +22,6 @@ void Scene::init(std::shared_ptr<Context>& m_context) {
     SetWindowSize(1920, 1080);
     SetWindowPosition(0, 0);
     m_context->states->setWindowState(NONE);
-
-    camera.position = { 5, 0, 5 };
-    camera.target = { 0, 0, 0 };
-    camera.up = { 0, 1, 0 };
-    camera.fovy = 45.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
 
     // lights init
     currLightsCount = 0;
@@ -121,7 +114,7 @@ void Scene::process(std::shared_ptr<Context>& m_context) {
             0 + distance,
             0 + distance
         };
-        camera.position = camPos;
+        m_context->camera->position = camPos;
     }
 
     int btn;
@@ -130,7 +123,7 @@ void Scene::process(std::shared_ptr<Context>& m_context) {
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         btn = MOUSE_BUTTON_RIGHT;
     }
-    if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, selectedEntity, shouldOpenContextPopup, camera, m_context, ray);
+    if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, selectedEntity, shouldOpenContextPopup, *m_context->camera, m_context, ray);
 
     if (IsKeyPressed(KEY_F1)) {
 
@@ -147,7 +140,7 @@ void Scene::process(std::shared_ptr<Context>& m_context) {
         curr_m = "RENDER";
         currentSh = RENDER;
 
-        float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
+        float cameraPos[3] = { m_context->camera->position.x, m_context->camera->position.y, m_context->camera->position.z };
         SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
         SetShaderValue(renderShader, GetShaderLocation(renderShader, "numLights"), &currLightsCount, SHADER_UNIFORM_INT);
         SetShaderValue(renderShader, ambientLoc, ambientColor, SHADER_UNIFORM_VEC4);
@@ -158,7 +151,7 @@ void Scene::process(std::shared_ptr<Context>& m_context) {
     }
 
     if (currentSh == RENDER) {
-        Vector3 cameraPos = camera.position;
+        Vector3 cameraPos = m_context->camera->position;
         SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
 
     }
@@ -214,7 +207,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
         SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
     }
 
-    BeginMode3D(camera);
+    BeginMode3D(*m_context->camera);
 
     // draw entities
     for (int i = 0; i < m_context->entities.size(); i++) {
@@ -250,7 +243,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     BeginTextureMode(gizmoTexture);
     ClearBackground((Color){0, 0, 0, 0});
 
-    BeginMode3D(camera);
+    BeginMode3D(*m_context->camera);
     rlDisableDepthTest();
 
     if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
@@ -299,7 +292,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
         DrawLine3D(rlEpos, Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), BLUE);
         DrawCube(Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), size, size, size, BLUE);
 
-        Ray gizmoRay = GetScreenToWorldRay(GetMousePosition(), camera);
+        Ray gizmoRay = GetScreenToWorldRay(GetMousePosition(), *m_context->camera);
         Vector2 mousePos = GetMousePosition();
 
         RayCollision hitX = GetRayCollisionBox(gizmoRay, boxX);
@@ -330,7 +323,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
         }
 
         if (isGizmoDragged && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-            Ray ray = GetScreenToWorldRay(GetMousePosition(), camera);
+            Ray ray = GetScreenToWorldRay(GetMousePosition(), *m_context->camera);
             glm::vec3 rayOrigin = glm::vec3(ray.position.x, ray.position.y, ray.position.z);
             glm::vec3 rayDirection = glm::normalize(glm::vec3(ray.direction.x, ray.direction.y, ray.direction.z));
 
@@ -462,7 +455,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::Checkbox("Strict Search", &useStrictSearch);
                 break;
             case 1:
-                uiManager.FloatInput("Zoom Speed", zoomSpeed, true, 1.0f, 50.0f);
+                m_context->uiManager->FloatInput("Zoom Speed", zoomSpeed, true, 1.0f, 50.0f);
                 break;
             case 2:
                 ImGui::Text("Solid Shader");
@@ -477,7 +470,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::Checkbox("Show Face Normals", &showFaceNormals);
                 ImGui::Checkbox("Show Edge Normals", &showEdgeNormals);
                     if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::BeginDisabled();
-                    uiManager.FloatSlider("Normals Length", length, 0.1f, 5.0f);
+                    m_context->uiManager->FloatSlider("Normals Length", length, 0.1f, 5.0f);
                     if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::EndDisabled();
                 break;
             case 4:
@@ -719,7 +712,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     // SCENE ENTITIES
     // ---------------
     ImGui::PushItemWidth(200);
-    uiManager.Section("Scene Entities", m_context->fontMgr.getXXL());
+    m_context->uiManager->Section("Scene Entities", m_context->fontMgr.getXXL());
 
     ImGui::PushItemWidth(380);
 
@@ -926,9 +919,9 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     }
     // ENTITY SETTINGS
     if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-        uiManager.Section("Entity Settings", m_context->fontMgr.getXL());
+        m_context->uiManager->Section("Entity Settings", m_context->fontMgr.getXL());
 
-        uiManager.Section("General", m_context->fontMgr.getLG(), 0);
+        m_context->uiManager->Section("General", m_context->fontMgr.getLG(), 0);
         ImGui::Dummy(ImVec2(0, 5));
 
         ImGui::Text("Entity Color");
@@ -959,7 +952,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
         ImGui::Checkbox("Show Wires", &showWires);
         ImGui::EndDisabled();
 
-        uiManager.Section("Shapers", m_context->fontMgr.getLG());
+        m_context->uiManager->Section("Shapers", m_context->fontMgr.getLG());
 
         ImGui::Text("Choose Shaper");
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
@@ -1011,7 +1004,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 }
             }
 
-            uiManager.Section("Noise", m_context->fontMgr.getLG());
+            m_context->uiManager->Section("Noise", m_context->fontMgr.getLG());
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Choose Noise Type");
@@ -1023,27 +1016,27 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 terrain->noiseType = "octave";
             }
 
-            shouldUpdateBuffers |= uiManager.FloatSlider("Frequency", terrain->frequency, 0.01f, 1.0f);
-            uiManager.SetItemTooltip("Frequency controls how fast the waves change", startHoverFreq, hoverDelay);
+            shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Frequency", terrain->frequency, 0.01f, 1.0f);
+            m_context->uiManager->SetItemTooltip("Frequency controls how fast the waves change", startHoverFreq, hoverDelay);
 
-            shouldUpdateBuffers |= uiManager.FloatSlider("Amplitude", terrain->amplitude, 0.1f, 10.0f);
-            uiManager.SetItemTooltip("Amplitude controls how tall the bumps are", startHoverAmp);
+            shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Amplitude", terrain->amplitude, 0.1f, 10.0f);
+            m_context->uiManager->SetItemTooltip("Amplitude controls how tall the bumps are", startHoverAmp);
 
             if (selectedNoiseType == 1) {
 
-                shouldUpdateBuffers |= uiManager.FloatSlider("Lacunarity", terrain->lacunarity, 0.01f, 10.0f);
-                uiManager.SetItemTooltip("Lacunarity increases frequency each octave", startHoverLac, hoverDelay);
+                shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Lacunarity", terrain->lacunarity, 0.01f, 10.0f);
+                m_context->uiManager->SetItemTooltip("Lacunarity increases frequency each octave", startHoverLac, hoverDelay);
 
-                shouldUpdateBuffers |= uiManager.FloatSlider("Persistence", terrain->persistence, 0.01f, 1.0f);
-                uiManager.SetItemTooltip("Persistence reduces amplitude each octave", startHoverPer, hoverDelay);
+                shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Persistence", terrain->persistence, 0.01f, 1.0f);
+                m_context->uiManager->SetItemTooltip("Persistence reduces amplitude each octave", startHoverPer, hoverDelay);
 
-                shouldUpdateBuffers |= uiManager.IntSlider("Octaves", terrain->octaves, 1, 12);
-                uiManager.SetItemTooltip("Octaves control how many laters of detail are", startHoverOct);
+                shouldUpdateBuffers |= m_context->uiManager->IntSlider("Octaves", terrain->octaves, 1, 12);
+                m_context->uiManager->SetItemTooltip("Octaves control how many laters of detail are", startHoverOct);
 
             }
             int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
 
-            uiManager.Section("Seed", m_context->fontMgr.getLG());
+            m_context->uiManager->Section("Seed", m_context->fontMgr.getLG());
 
             ImGui::Dummy(ImVec2(0, 5));
             ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities.at(selectedEntity)->e_seedEnable);
