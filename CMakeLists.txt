@@ -52,6 +52,8 @@ add_executable(3DProdGen
         src/States/EntityPaint.hpp
         src/AppUI.cpp
         src/AppUI.hpp
+        src/Debug/UV.cpp
+        src/Debug/UV.hpp
 )
 
 target_link_libraries(3DProdGen
