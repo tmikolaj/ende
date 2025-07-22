@@ -53,6 +53,8 @@ Mesh CustomMeshes::GenMeshIcosahedron() {
 
     auto norm = static_cast<float*>(calloc(vertexCount * 3, sizeof(float)));
 
+    auto texc = static_cast<float*>(malloc(sizeof(float) * vertexCount * 2));
+
     for (int i = 0; i < vertexCount; i++) {
         verts[i * 3] = positions[i].x;
         verts[i * 3 + 1] = positions[i].y;
@@ -93,12 +95,22 @@ Mesh CustomMeshes::GenMeshIcosahedron() {
         norm[i * 3 + 2] = n.z;
     }
 
+    for (int i = 0; i < vertexCount; i++) {
+        glm::vec3 v = positions[i];
+        float u = 0.5f + atan2(v.z, v.x) / (2.0f * std::numbers::pi);
+        float vtex = 0.5f - asin(v.y) / std::numbers::pi;
+
+        texc[i * 2] = u;
+        texc[i * 2 + 1] = vtex;
+    }
+
     Mesh mesh = { 0 };
     mesh.vertices = verts;
     mesh.indices = inds;
     mesh.vertexCount = vertexCount;
     mesh.triangleCount = indexCount / 3;
     mesh.normals = norm;
+    mesh.texcoords = texc;
 
     UploadMesh(&mesh, true);
 
