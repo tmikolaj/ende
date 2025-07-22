@@ -6,6 +6,7 @@
 #include "lLight.hpp"
 #include "FontManager.hpp"
 #include "AppUI.hpp"
+#include "UIManager.hpp"
 
 enum WindowState {
     NONE = 0,
@@ -20,10 +21,15 @@ struct Context {
     std::vector<std::unique_ptr<lLight>> llights;
     Engine::FontManager fontMgr;
     std::unique_ptr<AppUI> ui;
+    std::unique_ptr<Camera3D> camera;
+    std::unique_ptr<UIManager> uiManager;
 
-    Context() : states(std::make_unique<Engine::StateManager>()),
-    entities(),
-    ui(std::make_unique<AppUI>()) {
+    Context() :
+    states(std::make_unique<Engine::StateManager>()),
+    ui(std::make_unique<AppUI>()),
+    camera(std::make_unique<Camera3D>()),
+    uiManager(std::make_unique<UIManager>()) {
+
     }
 };
 
