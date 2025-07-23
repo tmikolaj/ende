@@ -2,7 +2,8 @@
 #define APPUI_HPP
 
 #include <memory>
-#include "StateManager.hpp"
+
+#include "../app/StateController.hpp"
 
 enum DrawMainMenuBarCodes {
 
@@ -18,8 +19,8 @@ public:
     AppUI() = default;
     ~AppUI() = default;
 
-    int DrawMainMenuBar(std::shared_ptr<Context>& _m_context, int& currentSh);
-    void DrawStateBar(std::shared_ptr<Context>& _m_context, int& currentSh, int stateIndex);
+    int DrawMainMenuBar(std::shared_ptr<Context>& p_context, int& currentSh);
+    void DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, int stateIndex);
 };
 
 #endif //APPUI_HPP

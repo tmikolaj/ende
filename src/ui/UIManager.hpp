@@ -2,7 +2,8 @@
 #define UIMANAGER_HPP
 
 #include <string>
-#include "imgui.h"
+
+#include "../../external/imgui/imgui.h"
 
 class UIManager {
 private:

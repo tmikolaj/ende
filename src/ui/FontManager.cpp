@@ -12,58 +12,58 @@ void Engine::FontManager::init() {
     io.FontDefault = md;
 }
 
-void Engine::FontManager::setXS() {
+void Engine::FontManager::setXS() const {
     ImGui::PushFont(xs);
 }
 
-void Engine::FontManager::setSM() {
+void Engine::FontManager::setSM() const {
     ImGui::PushFont(sm);
 }
 
-void Engine::FontManager::setMD() {
+void Engine::FontManager::setMD() const {
     ImGui::PushFont(md);
 }
 
-void Engine::FontManager::setLG() {
+void Engine::FontManager::setLG() const {
     ImGui::PushFont(lg);
 }
 
-void Engine::FontManager::setXL() {
+void Engine::FontManager::setXL() const {
     ImGui::PushFont(xl);
 }
 
-void Engine::FontManager::setXXL() {
+void Engine::FontManager::setXXL() const {
     ImGui::PushFont(xxl);
 }
 
-void Engine::FontManager::setTITLE() {
+void Engine::FontManager::setTITLE() const {
     ImGui::PushFont(title);
 }
 
-ImFont* Engine::FontManager::getXS() {
+ImFont* Engine::FontManager::getXS() const {
     return xs;
 }
 
-ImFont* Engine::FontManager::getSM() {
+ImFont* Engine::FontManager::getSM() const {
     return sm;
 }
 
-ImFont* Engine::FontManager::getMD() {
+ImFont* Engine::FontManager::getMD() const {
     return md;
 }
 
-ImFont* Engine::FontManager::getLG() {
+ImFont* Engine::FontManager::getLG() const {
     return lg;
 }
 
-ImFont* Engine::FontManager::getXL() {
+ImFont* Engine::FontManager::getXL() const {
     return xl;
 }
 
-ImFont* Engine::FontManager::getXXL() {
+ImFont* Engine::FontManager::getXXL() const {
     return xxl;
 }
 
-ImFont* Engine::FontManager::getTITLE() {
+ImFont* Engine::FontManager::getTITLE() const {
     return title;
 }

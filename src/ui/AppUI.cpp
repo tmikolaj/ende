@@ -1,14 +1,16 @@
 #include "AppUI.hpp"
-#include "imgui.h"
-#include "Context.hpp"
 
-int AppUI::DrawMainMenuBar(std::shared_ptr<Context>& _m_context, int& currentSh) {
+#include "imgui.h"
+
+#include "../core/Context.hpp"
+
+int AppUI::DrawMainMenuBar(std::shared_ptr<Context>& p_context, int& currentSh) {
     int code = -1;
 
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Close Project")) {
-                _m_context->states->requestStateChange(STARTMENU);
+                p_context->states->requestStateChange(STARTMENU);
             }
             ImGui::EndMenu();
         }
@@ -58,7 +60,7 @@ int AppUI::DrawMainMenuBar(std::shared_ptr<Context>& _m_context, int& currentSh)
     return code;
 }
 
-void AppUI::DrawStateBar(std::shared_ptr<Context>& _m_context, int& currentSh, int stateIndex) {
+void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, int stateIndex) {
     float menuHeight = ImGui::GetFrameHeight();
 
     ImGui::SetNextWindowPos(ImVec2(0, menuHeight));
@@ -69,15 +71,15 @@ void AppUI::DrawStateBar(std::shared_ptr<Context>& _m_context, int& currentSh, i
     if (ImGui::BeginTabBar("StateTabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_NoTooltip)) {
         if (ImGui::BeginTabItem("Scene")) {
 
-            if (stateIndex != SCENE && !_m_context->states->isChangePending()) {
-                _m_context->states->requestStateChange(SCENE, true);
+            if (stateIndex != SCENE && !p_context->states->isChangePending()) {
+                p_context->states->requestStateChange(SCENE, true);
             }
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Entity Paint")) {
 
-            if (stateIndex != ENTITYPAINT && !_m_context->states->isChangePending()) {
-                _m_context->states->requestStateChange(ENTITYPAINT, false, 1);
+            if (stateIndex != ENTITYPAINT && !p_context->states->isChangePending()) {
+                p_context->states->requestStateChange(ENTITYPAINT, false, 1);
                 currentSh = 1;
             }
             ImGui::EndTabItem();
