@@ -54,6 +54,8 @@ add_executable(3DProdGen
         src/AppUI.hpp
         src/Debug/UV.cpp
         src/Debug/UV.hpp
+        src/ShaderManager.cpp
+        src/ShaderManager.hpp
 )
 
 target_link_libraries(3DProdGen
