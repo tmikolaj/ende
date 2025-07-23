@@ -7,6 +7,7 @@
 #include "FontManager.hpp"
 #include "AppUI.hpp"
 #include "UIManager.hpp"
+#include "ShaderManager.hpp"
 
 enum WindowState {
     NONE = 0,
@@ -23,12 +24,14 @@ struct Context {
     std::unique_ptr<AppUI> ui;
     std::unique_ptr<Camera3D> camera;
     std::unique_ptr<UIManager> uiManager;
+    std::unique_ptr<Engine::ShaderManager> shaders;
 
     Context() :
     states(std::make_unique<Engine::StateManager>()),
     ui(std::make_unique<AppUI>()),
     camera(std::make_unique<Camera3D>()),
-    uiManager(std::make_unique<UIManager>()) {
+    uiManager(std::make_unique<UIManager>()),
+    shaders(std::make_unique<Engine::ShaderManager>()) {
 
     }
 };
