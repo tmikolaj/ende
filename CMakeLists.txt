@@ -11,13 +11,6 @@ set(IMGUI_SRC
         external/imgui/imgui_draw.cpp
         external/imgui/imgui_tables.cpp
         external/imgui/imgui_widgets.cpp
-        src/Entities/TerrainType.cpp
-        src/Entities/TerrainType.hpp
-        src/Entities/RockType.cpp
-        src/Entities/RockType.hpp
-        src/Shapers/Shaper.hpp
-        src/Shapers/SubdivisionShaper.cpp
-        src/Shapers/SubdivisionShaper.hpp
 )
 add_library(imgui STATIC ${IMGUI_SRC})
 target_include_directories(imgui PUBLIC external/imgui)
@@ -31,31 +24,49 @@ target_include_directories(rlImGui PUBLIC
 target_link_libraries(rlImGui PUBLIC imgui raylib)
 
 add_executable(3DProdGen
-        main.cpp
-        src/Program.cpp
-        src/States/StartMenu.cpp
-        src/StateManager.cpp
-        src/States/Scene.cpp
-        src/States/Scene.hpp
-        src/Noise.cpp
-        src/Noise.hpp
-        src/Extras/CustomMeshes.cpp
-        src/Extras/CustomMeshes.hpp
-        src/Debug/Normals.cpp
-        src/Debug/Normals.hpp
-        src/lLight.hpp
-        src/FontManager.cpp
-        src/FontManager.hpp
-        src/UIManager.cpp
-        src/UIManager.hpp
-        src/States/EntityPaint.cpp
-        src/States/EntityPaint.hpp
-        src/AppUI.cpp
-        src/AppUI.hpp
-        src/Debug/UV.cpp
-        src/Debug/UV.hpp
-        src/ShaderManager.cpp
-        src/ShaderManager.hpp
+        src/app/Application.cpp
+        src/app/StateController.cpp
+        src/app/main.cpp
+
+        src/core/Context.hpp
+
+        src/debug/NormalVisualizer.cpp
+        src/debug/NormalVisualizer.hpp
+        src/debug/UVChecker.cpp
+        src/debug/UVChecker.hpp
+
+        src/entities/Entity.hpp
+        src/entities/CustomMeshFactory.cpp
+        src/entities/CustomMeshFactory.hpp
+        src/entities/RockEntity.cpp
+        src/entities/RockEntity.hpp
+        src/entities/TerrainEntity.cpp
+        src/entities/TerrainEntity.hpp
+
+        src/graphics/ShaderManager.cpp
+        src/graphics/ShaderManager.hpp
+        src/graphics/lLight.hpp
+
+        src/math/Noise.cpp
+        src/math/Noise.hpp
+
+        src/shapers/Shaper.hpp
+        src/shapers/SubdivisionShaper.cpp
+        src/shapers/SubdivisionShaper.hpp
+
+        src/states/BaseState.hpp
+        src/states/EntityPaintState.cpp
+        src/states/EntityPaintState.hpp
+        src/states/SceneEditorState.cpp
+        src/states/SceneEditorState.hpp
+        src/states/StartMenuState.cpp
+
+        src/ui/AppUI.cpp
+        src/ui/AppUI.hpp
+        src/ui/FontManager.cpp
+        src/ui/FontManager.hpp
+        src/ui/UIManager.cpp
+        src/ui/UIManager.hpp
 )
 
 target_link_libraries(3DProdGen
