@@ -1,5 +1,5 @@
 #include <string>
-#include "rlights.h"
+#include "../../external/raylib/src/rlights.h"
 
 struct lLight {
     Light _l_light;

@@ -11,6 +11,8 @@ enum currentShader {
     WIREFRAME = 3
 };
 
+struct Context;
+
 namespace Engine {
 
 class ShaderManager {

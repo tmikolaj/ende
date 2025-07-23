@@ -1,5 +1,5 @@
 #include <stdexcept>
-#include "Context.hpp"
+#include "../core/Context.hpp"
 #include "ShaderManager.hpp"
 
 void Engine::ShaderManager::init() {
