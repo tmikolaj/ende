@@ -34,6 +34,10 @@ public:
 			auto rawIndices = static_cast<unsigned short*>(e_mesh->indices);
 			e_indices.assign(rawIndices, rawIndices + e_mesh->triangleCount * 3);
 		}
+		if (e_mesh->texcoords != nullptr) {
+			auto rawTexcoords = static_cast<float*>(e_mesh->texcoords);
+			e_texcoords.assign(rawTexcoords, rawTexcoords + e_mesh->vertexCount * 2);
+		}
 
   		e_colorValues = { 1.0f, 1.0f, 1.0f, 1.0f };
   		e_color = ImVecToColor(e_colorValues);
@@ -70,6 +74,7 @@ public:
 	std::vector<float> e_vertices;
 	std::vector<float> e_normals;
 	std::vector<unsigned short> e_indices;
+	std::vector<float> e_texcoords;
 
 	std::string e_type;
 
