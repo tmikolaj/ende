@@ -1,13 +1,16 @@
 #ifndef CONTEXT_HPP
 #define CONTEXT_HPP
 
-#include "StateManager.hpp"
-#include "Entities/Entity.hpp"
-#include "lLight.hpp"
-#include "FontManager.hpp"
-#include "AppUI.hpp"
-#include "UIManager.hpp"
-#include "ShaderManager.hpp"
+#include "../ui/FontManager.hpp"
+#include "../ui/AppUI.hpp"
+#include "../ui/UIManager.hpp"
+
+#include "../graphics/lLight.hpp"
+#include "../graphics/ShaderManager.hpp"
+
+#include "../app/StateController.hpp"
+
+#include "../entities/Entity.hpp"
 
 enum WindowState {
     NONE = 0,
@@ -17,7 +20,7 @@ enum WindowState {
 
 struct Context {
     // TODO:
-    std::unique_ptr<Engine::StateManager> states;
+    std::unique_ptr<Engine::StateController> states;
     std::vector<std::unique_ptr<Entity>> entities;
     std::vector<std::unique_ptr<lLight>> llights;
     Engine::FontManager fontMgr;
@@ -27,7 +30,7 @@ struct Context {
     std::unique_ptr<Engine::ShaderManager> shaders;
 
     Context() :
-    states(std::make_unique<Engine::StateManager>()),
+    states(std::make_unique<Engine::StateController>()),
     ui(std::make_unique<AppUI>()),
     camera(std::make_unique<Camera3D>()),
     uiManager(std::make_unique<UIManager>()),
