@@ -1,14 +1,14 @@
-#include "StartMenu.hpp"
-#include "Scene.hpp"
+#include "StartMenuState.hpp"
+#include "SceneEditorState.hpp"
 
-StartMenu::StartMenu() :
+StartMenuState::StartMenuState() :
 nameBuffer{""},
 showEmptyNameWarning(false),
 seedBuffer("") {
 
 }
 
-void StartMenu::init(std::shared_ptr<Context>& m_context) {
+void StartMenuState::init(std::shared_ptr<Context>& m_context) {
     // TODO: Will later load some information
     SetWindowSize(800, 600);
 
@@ -22,11 +22,11 @@ void StartMenu::init(std::shared_ptr<Context>& m_context) {
     SetWindowPosition(posX, posY);
 }
 
-void StartMenu::process(std::shared_ptr<Context>& m_context) {
+void StartMenuState::process(std::shared_ptr<Context>& m_context) {
     // TODO: Will later process some loaded information
 }
 
-void StartMenu::draw(std::shared_ptr<Context>& m_context) {
+void StartMenuState::draw(std::shared_ptr<Context>& m_context) {
     BeginDrawing();
     ClearBackground((Color){44, 44, 44, 255});
 
@@ -122,7 +122,7 @@ void StartMenu::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::CloseCurrentPopup();
                 showEmptyNameWarning = false;
                 noise.init(seedBuffer);
-                m_context->states->add(std::make_unique<Scene>(), true);
+                m_context->states->add(std::make_unique<SceneEditorState>(), true);
                 m_context->states->setWindowState(RESTART);
             }
         }
@@ -163,6 +163,6 @@ void StartMenu::draw(std::shared_ptr<Context>& m_context) {
     EndDrawing();
 }
 
-void StartMenu::clean(std::shared_ptr<Context>& m_context) {
+void StartMenuState::clean(std::shared_ptr<Context>& m_context) {
 
 }

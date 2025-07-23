@@ -1,10 +1,12 @@
 #include <rlImGui.h>
-#include "../Context.hpp"
-#include "EntityPaint.hpp"
-#include "raymath.h"
-#include "rlgl.h"
 
-void EntityPaint::init(std::shared_ptr<Context> &m_context) {
+#include "EntityPaintState.hpp"
+
+#include "../core/Context.hpp"
+
+#include "raymath.h"
+
+void EntityPaintState::init(std::shared_ptr<Context> &m_context) {
 
     // brush related variables init
     brushSize = 1;
@@ -31,7 +33,7 @@ void EntityPaint::init(std::shared_ptr<Context> &m_context) {
     HideCursor();
 }
 
-void EntityPaint::process(std::shared_ptr<Context> &m_context) {
+void EntityPaintState::process(std::shared_ptr<Context> &m_context) {
     Ray ray = GetMouseRay(GetMousePosition(), *m_context->camera);
 
     bool didHit = false;
@@ -81,7 +83,7 @@ void EntityPaint::process(std::shared_ptr<Context> &m_context) {
     }
 }
 
-void EntityPaint::draw(std::shared_ptr<Context> &m_context) {
+void EntityPaintState::draw(std::shared_ptr<Context> &m_context) {
     BeginDrawing();
     ClearBackground(Color{30, 30, 30, 255});
 
@@ -151,11 +153,11 @@ void EntityPaint::draw(std::shared_ptr<Context> &m_context) {
     EndDrawing();
 }
 
-void EntityPaint::clean(std::shared_ptr<Context> &m_context) {
+void EntityPaintState::clean(std::shared_ptr<Context> &m_context) {
     ShowCursor();
 }
 
-Color EntityPaint::ImVec4ToColor(ImVec4 p_color) {
+Color EntityPaintState::ImVec4ToColor(ImVec4 p_color) {
     return (Color){
         static_cast<unsigned char>(p_color.x * 255.0f),
         static_cast<unsigned char>(p_color.y * 255.0f),
@@ -164,7 +166,7 @@ Color EntityPaint::ImVec4ToColor(ImVec4 p_color) {
     };
 }
 
-bool EntityPaint::CheckCollisionRayTriangle(const Ray& ray, Vector3 v0, Vector3 v1, Vector3 v2, Vector3* p_hitPos) {
+bool EntityPaintState::CheckCollisionRayTriangle(const Ray& ray, Vector3 v0, Vector3 v1, Vector3 v2, Vector3* p_hitPos) {
     constexpr float EPS = 0.000001f;
 
     Vector3 edge1 = Vector3Subtract(v1, v0);

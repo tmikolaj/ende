@@ -1,15 +1,18 @@
-#ifndef STARTMENU_HPP
-#define STARTMENU_HPP
+#ifndef STARTMENUSTATE_HPP
+#define STARTMENUSTATE_HPP
 
 #include <string>
-#include "bStateTemplate.hpp"
+
+#include "BaseState.hpp"
+
 #include "external/rlImGui/rlImGui.h"
 #include "external/imgui/imgui.h"
-#include "../Context.hpp"
-#include "Scene.hpp"
-#include "../Noise.hpp"
 
-class StartMenu : public bStateTemplate {
+#include "../core/Context.hpp"
+
+#include "../math/Noise.hpp"
+
+class StartMenuState : public BaseState {
 private:
     std::string projectName;
     char nameBuffer[25];
@@ -18,8 +21,8 @@ private:
     char seedBuffer[25];
     Noise noise;
 public:
-    StartMenu();
-    ~StartMenu() override = default;
+    StartMenuState();
+    ~StartMenuState() override = default;
 
     void init(std::shared_ptr<Context>& m_context) override;
     void process(std::shared_ptr<Context>& m_context) override;
@@ -27,4 +30,4 @@ public:
     void clean(std::shared_ptr<Context>& m_context) override;
 };
 
-#endif // STARTMENU_HPP
+#endif // STARTMENUSTATE_HPP

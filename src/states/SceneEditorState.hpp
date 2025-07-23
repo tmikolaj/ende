@@ -1,28 +1,26 @@
-#ifndef SCENE_HPP
-#define SCENE_HPP
+#ifndef SCENEEDITORSTATE_HPP
+#define SCENEEDITORSTATE_HPP
 
 #include <typeinfo>
+
 #include "raylib.h"
-#include "../Context.hpp"
-#include "external/rlImGui/rlImGui.h"
+
 #include "external/imgui/imgui.h"
-#include "../Noise.hpp"
-#include "external/glm/glm.hpp"
-#include "../Entities/TerrainType.hpp"
-#include "../Entities/RockType.hpp"
-#include "../Shapers/Shaper.hpp"
-#include "../Shapers/SubdivisionShaper.hpp"
-#include "../Extras/CustomMeshes.hpp"
-#include "../Debug/Normals.hpp"
-#include "../Debug/UV.hpp"
-#include "rlights.h"
+
+#include "../core/Context.hpp"
+#include "../math/Noise.hpp"
+
+#include "../entities/CustomMeshFactory.hpp"
+
+#include "../debug/NormalVisualizer.hpp"
+#include "../debug/UVChecker.hpp"
 
 enum entity {
     TERRAIN = 0,
     ROCK = 1,
 };
 
-class Scene : public bStateTemplate {
+class SceneEditorState : public BaseState {
 private:
     // render/draw variables
     RenderTexture2D sceneTexture;
@@ -43,9 +41,9 @@ private:
     Ray ray;
 
     Noise noise;
-    CustomMeshes customMeshes;
-    Normals normalController;
-    UV uvController;
+    CustomMeshFactory customMeshes;
+    NormalVisualizer normalController;
+    UVChecker uvController;
 
     bool shouldOpenContextPopup;
     bool contextForEntity;
@@ -85,8 +83,8 @@ private:
     ImVec4 normalsColor;
     bool showUV;
 public:
-    Scene();
-    ~Scene() override = default;
+    SceneEditorState();
+    ~SceneEditorState() override = default;
 
     void init(std::shared_ptr<Context>& m_context) override;
     void process(std::shared_ptr<Context>& m_context) override;
@@ -98,4 +96,4 @@ public:
     bool checkIfHasShaper(const std::type_info& type, std::shared_ptr<Context>& m_context) const;
 };
 
-#endif //SCENE_HPP
+#endif // SCENEEDITORSTATE_HPP

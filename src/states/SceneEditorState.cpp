@@ -1,15 +1,25 @@
-#include "Scene.hpp"
+#include "SceneEditorState.hpp"
 #define RLIGHTS_IMPLEMENTATION
 #include "raymath.h"
 #include "rlgl.h"
 #include "rlights.h"
 
-Scene::Scene() :
+#include "external/rlImGui/rlImGui.h"
+
+#include "external/glm/glm.hpp"
+
+#include "../entities/TerrainEntity.hpp"
+#include "../entities/RockEntity.hpp"
+
+#include "../shapers/Shaper.hpp"
+#include "../shapers/SubdivisionShaper.hpp"
+
+SceneEditorState::SceneEditorState() :
 openRenamePopup(false) {
 
 }
 
-void Scene::init(std::shared_ptr<Context>& m_context) {
+void SceneEditorState::init(std::shared_ptr<Context>& m_context) {
     SetWindowSize(1920, 1080);
     SetWindowPosition(0, 0);
     m_context->states->setWindowState(NONE);
@@ -77,7 +87,7 @@ void Scene::init(std::shared_ptr<Context>& m_context) {
     }
 }
 
-void Scene::process(std::shared_ptr<Context>& m_context) {
+void SceneEditorState::process(std::shared_ptr<Context>& m_context) {
     if (!ImGui::GetIO().WantCaptureMouse) {
         distance -= GetMouseWheelMove() * zoomSpeed;
 
@@ -118,7 +128,7 @@ void Scene::process(std::shared_ptr<Context>& m_context) {
     }
 }
 
-void Scene::draw(std::shared_ptr<Context>& m_context) {
+void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     if (WindowShouldClose()) {
         m_context->states->setWindowState(EXIT);
         return;
@@ -497,11 +507,11 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
         ImGui::OpenPopup("AddEntity");
         if (ImGui::BeginPopupModal("AddEntity", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
             if (entityToAdd == TERRAIN) {
-                static TerrainType* _terrain;
+                static TerrainEntity* _terrain;
                 if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
 
                     if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-                        _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
+                        _terrain = dynamic_cast<TerrainEntity*>(m_context->entities.at(selectedEntity).get());
                     }
                 } else {
                     _terrain = nullptr;
@@ -517,9 +527,9 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 if (!pushed || shouldUpdate) {
                     if (shouldUpdate) m_context->entities.pop_back();
                     shouldUpdate = false;
-                    m_context->entities.emplace_back(std::make_unique<TerrainType>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
+                    m_context->entities.emplace_back(std::make_unique<TerrainEntity>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
                     selectedEntity = static_cast<int>(m_context->entities.size() - 1);
-                    _terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
+                    _terrain = dynamic_cast<TerrainEntity*>(m_context->entities.at(selectedEntity).get());
                     _terrain->noiseType = "perlin";
                     pushed = true;
                 }
@@ -578,11 +588,11 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
             //      ROCK
             // ----------------
             } else if (entityToAdd == ROCK) {
-                static RockType* _rock;
+                static RockEntity* _rock;
                 if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
 
                     if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-                        _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+                        _rock = dynamic_cast<RockEntity*>(m_context->entities.at(selectedEntity).get());
                     }
                 } else {
                     _rock = nullptr;
@@ -591,9 +601,9 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 static bool pushed = false;
 
                 if (!pushed) {
-                    m_context->entities.emplace_back(std::make_unique<RockType>(customMeshes.GenMeshIcosahedron(), "rock", "rock"));
+                    m_context->entities.emplace_back(std::make_unique<RockEntity>(customMeshes.GenMeshIcosahedron(), "rock", "rock"));
                     selectedEntity = static_cast<int>(m_context->entities.size() - 1);
-                    _rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+                    _rock = dynamic_cast<RockEntity*>(m_context->entities.at(selectedEntity).get());
                     m_context->entities.at(selectedEntity)->e_boundingBox = m_context->entities.at(selectedEntity)->GenMeshBoundingBox(*m_context->entities.at(selectedEntity)->e_mesh, m_context->entities.at(selectedEntity)->e_position);
                     pushed = true;
                 }
@@ -931,7 +941,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
         }
 
         if (m_context->entities.at(selectedEntity)->e_type == "terrain") {
-            auto* terrain = dynamic_cast<TerrainType*>(m_context->entities.at(selectedEntity).get());
+            auto* terrain = dynamic_cast<TerrainEntity*>(m_context->entities.at(selectedEntity).get());
 
             noise.frequency = terrain->frequency;
             noise.amplitude = terrain->amplitude;
@@ -1004,7 +1014,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
 
             ImGui::PopItemWidth();
         } else if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-            auto* rock = dynamic_cast<RockType*>(m_context->entities.at(selectedEntity).get());
+            auto* rock = dynamic_cast<RockEntity*>(m_context->entities.at(selectedEntity).get());
 
             noise.frequency = rock->frequency;
             noise.amplitude = rock->amplitude;
@@ -1097,7 +1107,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     EndDrawing();
 }
 
-void Scene::clean(std::shared_ptr<Context>& m_context) {
+void SceneEditorState::clean(std::shared_ptr<Context>& m_context) {
     for (auto& entityPtr : m_context->entities) {
         Entity& e = *entityPtr;
 
@@ -1111,7 +1121,7 @@ void Scene::clean(std::shared_ptr<Context>& m_context) {
     CloseWindow();
 }
 
-Color Scene::ImVecToColor(ImVec4 _color) {
+Color SceneEditorState::ImVecToColor(ImVec4 _color) {
     return (Color){
         static_cast<unsigned char>(_color.x * 255.0f),
         static_cast<unsigned char>(_color.y * 255.0f),
@@ -1120,7 +1130,7 @@ Color Scene::ImVecToColor(ImVec4 _color) {
     };
 }
 
-void Scene::HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_context, const Camera3D& _camera, const std::shared_ptr<Context>& _m_context, Ray _ray) {
+void SceneEditorState::HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_context, const Camera3D& _camera, const std::shared_ptr<Context>& _m_context, Ray _ray) {
     if (ImGui::GetIO().WantCaptureMouse || !IsMouseButtonPressed(btn)) return;
 
     _ray = GetMouseRay(GetMousePosition(), _camera);
@@ -1143,7 +1153,7 @@ void Scene::HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_co
     }
 }
 
-bool Scene::checkIfHasShaper(const std::type_info &type, std::shared_ptr<Context>& m_context) const {
+bool SceneEditorState::checkIfHasShaper(const std::type_info &type, std::shared_ptr<Context>& m_context) const {
     for (const auto* shaper : m_context->entities.at(selectedEntity)->e_shapers) {
         if (typeid(*shaper) == type) return true;
     }

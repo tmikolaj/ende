@@ -1,9 +1,14 @@
-#ifndef ENTITYPAINT_HPP
-#define ENTITYPAINT_HPP
+#ifndef ENTITYPAINTSTATE_HPP
+#define ENTITYPAINTSTATE_HPP
 
-#include "bStateTemplate.hpp"
+#include <memory>
 
-class EntityPaint : public bStateTemplate {
+#include "imgui.h"
+#include "BaseState.hpp"
+
+struct Context;
+
+class EntityPaintState : public BaseState {
 private:
 
     // brush related variables
@@ -20,8 +25,8 @@ private:
     int currentShader;
     int selectedEntity;
 public:
-    EntityPaint() = default;
-    ~EntityPaint() override = default;
+    EntityPaintState() = default;
+    ~EntityPaintState() override = default;
 
     void init(std::shared_ptr<Context> &m_context) override;
     void process(std::shared_ptr<Context> &m_context) override;
@@ -32,4 +37,4 @@ public:
     bool CheckCollisionRayTriangle(const Ray& ray, Vector3 v0, Vector3 v1, Vector3 v2, Vector3* p_hitPos);
 };
 
-#endif //ENTITYPAINT_HPP
+#endif //ENTITYPAINTSTATE_HPP
