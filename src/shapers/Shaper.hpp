@@ -1,7 +1,7 @@
 #ifndef SHAPER_HPP
 #define SHAPER_HPP
 
-#include "../Entities/Entity.hpp"
+#include "../entities/Entity.hpp"
 
 class Shaper {
 protected:
