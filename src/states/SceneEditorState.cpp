@@ -963,10 +963,10 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 float z = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
 
                 if (terrain->noiseType == "perlin") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getBasicPerlinTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getSimplePatternTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 } else if (terrain->noiseType == "octave") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getOctaveTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getFractalNoise(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 }
             }
@@ -999,6 +999,9 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
                 shouldUpdateBuffers |= m_context->uiManager->IntSlider("Octaves", terrain->octaves, 1, 12);
                 m_context->uiManager->SetItemTooltip("Octaves control how many laters of detail are", startHoverOct);
+
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Checkbox("Use Improved Noise", &noise.improvedFakeNoise);
 
             }
             int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
@@ -1035,7 +1038,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
                 glm::vec3 v(v0, v1, v2);
 
-                v = noise.getBasicPerlinRock(v, m_context->entities.at(selectedEntity)->e_seedEnable);
+                v = noise.getSimplePatternRock(v, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 m_context->entities.at(selectedEntity)->e_vertices[i * 3] = v.x;
                 m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = v.y;
@@ -1048,10 +1051,11 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             ImGui::PopFont();
 
             ImGui::Dummy(ImVec2(0, 2.5f));
-            ImGui::Text("Amplitude");
-            ImGui::SliderFloat("##RockAmplitude", &rock->amplitude, 0.10f, 1.0f);
             ImGui::Text("Frequency");
             ImGui::SliderFloat("##RockFrequency", &rock->frequency, 0.01f, 1.0f);
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Amplitude");
+            ImGui::SliderFloat("##RockAmplitude", &rock->amplitude, 0.10f, 1.0f);
 
             m_context->entities.at(selectedEntity)->UpdateBuffers();
 
