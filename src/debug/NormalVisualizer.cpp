@@ -1,7 +1,7 @@
-#include "Normals.hpp"
+#include "NormalVisualizer.hpp"
 #include "../../external/raylib/src/raymath.h"
 
-void Normals::DrawVertexNormals(const Mesh& mesh, float length, Color color) {
+void NormalVisualizer::DrawVertexNormals(const Mesh& mesh, float length, Color color) {
     for (int i = 0; i < mesh.vertexCount; i++) {
         Vector3 position = {
             mesh.vertices[i * 3],
@@ -25,7 +25,7 @@ void Normals::DrawVertexNormals(const Mesh& mesh, float length, Color color) {
     }
 }
 
-void Normals::DrawFaceNormals(const Mesh& mesh, float length, Color color) {
+void NormalVisualizer::DrawFaceNormals(const Mesh& mesh, float length, Color color) {
     for (int i = 0; i < mesh.triangleCount; i++) {
         int i0 = mesh.indices[i * 3];
         int i1 = mesh.indices[i * 3 + 1];
@@ -64,7 +64,7 @@ void Normals::DrawFaceNormals(const Mesh& mesh, float length, Color color) {
     }
 }
 
-void Normals::DrawEdgeNormals(const Mesh& mesh, float length, Color color) {
+void NormalVisualizer::DrawEdgeNormals(const Mesh& mesh, float length, Color color) {
     for (int i = 0; i < mesh.triangleCount; i++) {
         int i0 = mesh.indices[i * 3];
         int i1 = mesh.indices[i * 3 + 1];

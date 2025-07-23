@@ -3,10 +3,10 @@
 
 #include "raylib.h"
 
-class UV {
+class UVChecker {
 public:
-    UV() = default;
-    ~UV() = default;
+    UVChecker() = default;
+    ~UVChecker() = default;
 
     Texture2D swappedTexture;
 
