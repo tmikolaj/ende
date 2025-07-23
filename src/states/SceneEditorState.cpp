@@ -773,6 +773,14 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             if (ImGui::MenuItem("Delete")) {
                 if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
 
+                    std::unique_ptr<Entity>& entity = m_context->entities.at(selectedEntity);
+
+                    for (auto& shaper : entity->e_shapers) {
+                        delete shaper;
+                    }
+
+                    UnloadModel(entity->e_model);
+
                     m_context->entities.erase(m_context->entities.begin() + selectedEntity);
                     selectedEntity = -1;
                 }
