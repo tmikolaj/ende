@@ -17,6 +17,8 @@ void Program::init() {
     context->states->add(std::make_unique<StartMenu>());
     context->states->processState();
 
+    context->shaders->init();
+
     context->camera->position = { 5, 0, 5 };
     context->camera->target = { 0, 0, 0 };
     context->camera->up = { 0, 1, 0 };
@@ -30,6 +32,7 @@ void Program::run() {
             w_state = context->states->getWindowState();
             if (w_state == EXIT) {
                 context->states->getCurrentState()->clean(context);
+                context->shaders->clean();
                 ImGui::DestroyContext();
                 exit(0);
             }
@@ -39,6 +42,8 @@ void Program::run() {
         }
         if (WindowShouldClose()) {
             context->states->getCurrentState()->clean(context);
+            context->shaders->clean();
+            ImGui::DestroyContext();
             exit(0);
         }
     }
