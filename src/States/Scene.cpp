@@ -5,31 +5,16 @@
 #include "rlights.h"
 
 Scene::Scene() :
-openRenamePopup(false),
-MAX_LIGHTS_COUNT(32) {
+openRenamePopup(false) {
 
 }
 
 void Scene::init(std::shared_ptr<Context>& m_context) {
-    materialPreviewShader = LoadShader(nullptr, nullptr);
-    solidShader = LoadShader("../assets/shaders/solid.vs", "../assets/shaders/solid.fs");
-    renderShader = LoadShader(TextFormat("../assets/shaders/raylibshaders/lighting.vs"), TextFormat("../assets/shaders/raylibshaders/lighting.fs"));
-
-    if (!IsShaderValid(renderShader) || !IsShaderValid(materialPreviewShader) || !IsShaderValid(solidShader)) {
-        throw std::runtime_error("Scene::init: Failed to load shader!");
-    }
-
     SetWindowSize(1920, 1080);
     SetWindowPosition(0, 0);
     m_context->states->setWindowState(NONE);
 
     // lights init
-    currLightsCount = 0;
-    ambientLoc = GetShaderLocation(renderShader, "ambient");
-    ambientColor[0] = 0.1f;
-    ambientColor[1] = 0.1f;
-    ambientColor[2] = 0.1f;
-    ambientColor[3] = 1.0f;
     typeToAdd = -1;
 
     // render/draw variables init
@@ -44,20 +29,7 @@ void Scene::init(std::shared_ptr<Context>& m_context) {
     entityToAdd = -1;
     isGizmoDragged = false;
     isGizmoHovered = false;
-
-    // shader related variables init
-    // solid shader
-    lightColor[0] = 1.0f;
-    lightColor[1] = 1.0f;
-    lightColor[2] = 1.0f;
-    lightDir = glm::normalize(glm::vec3{0.625f, 0.159f, 0.917f});
-    lightDirection[0] = lightDir.x;
-    lightDirection[1] = lightDir.y;
-    lightDirection[2] = lightDir.z;
-    uLightDirLoc = GetShaderLocation(solidShader, "lightDir"); // shader set as solid by default
-    uBaseColorLoc = GetShaderLocation(solidShader, "baseColor");
-    // render shader
-    renderShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(renderShader, "viewPos");
+    shader = m_context->shaders->getShader(SOLID);
 
     // camera related variables init
     zoomSpeed = 1.0f;
@@ -98,8 +70,7 @@ void Scene::init(std::shared_ptr<Context>& m_context) {
     contextForEntity = true;
     hoverDelay = 1.0f;
 
-    SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
-    SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
+    m_context->shaders->handleSetShaderValue(SOLID, m_context);
 
     for (auto& e : m_context->entities) {
         e->UpdateBuffers();
@@ -126,36 +97,9 @@ void Scene::process(std::shared_ptr<Context>& m_context) {
     }
     if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, selectedEntity, shouldOpenContextPopup, *m_context->camera, m_context, ray);
 
-    if (IsKeyPressed(KEY_F1)) {
+    m_context->shaders->handleShaderSelection(currentSh);
 
-        curr_m = "SOLID";
-        currentSh = SOLID;
-        SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
-        SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
-    } else if (IsKeyPressed(KEY_F2)) {
-
-        curr_m = "MATERIAL PREVIEW";
-        currentSh = M_PREVIEW;
-    } else if (IsKeyPressed(KEY_F3)) {
-
-        curr_m = "RENDER";
-        currentSh = RENDER;
-
-        float cameraPos[3] = { m_context->camera->position.x, m_context->camera->position.y, m_context->camera->position.z };
-        SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-        SetShaderValue(renderShader, GetShaderLocation(renderShader, "numLights"), &currLightsCount, SHADER_UNIFORM_INT);
-        SetShaderValue(renderShader, ambientLoc, ambientColor, SHADER_UNIFORM_VEC4);
-    } else if (IsKeyPressed(KEY_F4)) {
-
-        curr_m = "WIREFRAME";
-        currentSh = WIREFRAME;
-    }
-
-    if (currentSh == RENDER) {
-
-        Vector3 cameraPos = m_context->camera->position;
-        SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
-    }
+    if (currentSh == RENDER) m_context->shaders->updateCamPos(m_context);
 
     static bool assignedTexture = false;
     static int indexAssignedTo = -1;
@@ -187,42 +131,31 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     // -----------------
     BeginTextureMode(sceneTexture);
 
-    for (int i = 0; i < currLightsCount; i++) {
-        UpdateLightValues(renderShader, m_context->llights.at(i)->_l_light);
-    }
+    m_context->shaders->updateLightValues(m_context);
 
-    if (currentSh == SOLID) {
-        ClearBackground(ImVecToColor(voidColSol));
-    } else if (currentSh == M_PREVIEW) {
-        ClearBackground(ImVecToColor(voidColMat));
-    } else if (currentSh == RENDER) {
-        ClearBackground(ImVecToColor(voidColRen));
-    } else {
-        ClearBackground(ImVecToColor(voidColWir));
-    }
+    m_context->shaders->handleBackgroundClearing(currentSh);
 
     // apply shader to all entities
     if (!m_context->entities.empty()) {
         for (const auto& entityPtr : m_context->entities) {
             Entity& e = *entityPtr;
             if (currentSh == SOLID) {
-                e.e_model.materials[0].shader = solidShader;
+                shader = m_context->shaders->getShader(SOLID);
+                m_context->shaders->handleSetShaderValue(SOLID, m_context);
+                e.e_model.materials[0].shader = *shader;
             } else if (currentSh == M_PREVIEW || currentSh == WIREFRAME) {
-                e.e_model.materials[0].shader = materialPreviewShader;
+                shader = m_context->shaders->getShader(M_PREVIEW);
+                e.e_model.materials[0].shader = *shader;
             } else {
-                e.e_model.materials[0].shader = renderShader;
+                shader = m_context->shaders->getShader(RENDER);
+                m_context->shaders->handleSetShaderValue(RENDER, m_context);
+                e.e_model.materials[0].shader = *shader;
             }
         }
     }
 
-    if (colorChanged) {
-        SetShaderValue(solidShader, uBaseColorLoc, &lightColor, SHADER_UNIFORM_VEC3);
-    }
-    if (dirChanged) {
-        auto newDir = glm::vec3(lightDirection[0], lightDirection[1], lightDirection[2]);
-        lightDir = glm::normalize(newDir);
-        SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
-    }
+    if (colorChanged) m_context->shaders->changeColor();
+    if (dirChanged) m_context->shaders->changeDirection();
 
     BeginMode3D(*m_context->camera);
 
@@ -476,10 +409,10 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                 break;
             case 2:
                 ImGui::Text("Solid Shader");
-                colorChanged = ImGui::ColorEdit3("##SolidLightColor", lightColor);
+                colorChanged = ImGui::ColorEdit3("##SolidLightColor", m_context->shaders->lightColor);
                 ImGui::Dummy(ImVec2(0, 2.5f));
                 ImGui::Text("Light Direction");
-                dirChanged = ImGui::SliderFloat3("##SolidLightDirection", lightDirection, -1.0f, 1.0f);
+                dirChanged = ImGui::SliderFloat3("##SolidLightDirection", m_context->shaders->lightDirection, -1.0f, 1.0f);
 
                 break;
             case 3:
@@ -509,7 +442,7 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     // -----------
     if (typeToAdd != -1) {
 
-        if (currLightsCount >= MAX_LIGHTS_COUNT) {
+        if (m_context->shaders->currLightsCount >= m_context->shaders->MAX_LIGHTS_COUNT) {
             maxLightsPopupOpen = true;
 
         } else {
@@ -528,21 +461,20 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
                     lightPtr->_l_light.enabled = true;
                     lightPtr->name = typeToAdd == LIGHT_POINT ? "point light" : "directional light";
 
-                    UpdateLightValues(renderShader, lightPtr->_l_light);
-                    currLightsCount++;
+                    UpdateLightValues(*m_context->shaders->getShader(RENDER), lightPtr->_l_light);
+                    m_context->shaders->currLightsCount++;
                     reused = true;
                     break;
                 }
             }
 
             if (!reused) {
-                Light rawLight = CreateLight(typeToAdd, pos, target, color, renderShader);
+                Light rawLight = CreateLight(typeToAdd, pos, target, color, *m_context->shaders->getShader(RENDER));
                 m_context->llights.push_back(std::make_unique<lLight>(typeToAdd == LIGHT_POINT ? "point light" : "directional light", rawLight));
-                currLightsCount++;
+                m_context->shaders->currLightsCount++;
             }
 
-            int numLightsLoc = GetShaderLocation(renderShader, "numLights");
-            SetShaderValue(renderShader, numLightsLoc, &currLightsCount, SHADER_UNIFORM_INT);
+            m_context->shaders->updateLights();
         }
 
         typeToAdd = -1;
@@ -847,45 +779,44 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
             std::string label = m_context->llights.at(selectedLight)->_l_light.enabled ? "Disable" : "Enable";
             if (ImGui::MenuItem(label.c_str())) {
                 m_context->llights.at(selectedLight)->_l_light.enabled = !m_context->llights.at(selectedLight)->_l_light.enabled;
-                UpdateLightValues(renderShader, m_context->llights.at(selectedLight)->_l_light);
+                m_context->shaders->updateSingleLight(m_context, selectedLight);
             }
             if (ImGui::MenuItem("Delete")) {
                 if (selectedLight >= 0 && selectedLight < m_context->llights.size()) {
 
-                    int lastIndex = currLightsCount - 1;
+                    int lastIndex = m_context->shaders->currLightsCount - 1;
 
                     if (selectedLight != lastIndex) {
                         std::swap(m_context->llights.at(selectedLight), m_context->llights.at(lastIndex));
 
                         char uniformName[64];
                         sprintf(uniformName, "lights[%d].enabled", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.enabledLoc = GetShaderLocation(renderShader, uniformName);
+                        m_context->llights.at(selectedLight)->_l_light.enabledLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].type", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.typeLoc = GetShaderLocation(renderShader, uniformName);
+                        m_context->llights.at(selectedLight)->_l_light.typeLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].position", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.positionLoc = GetShaderLocation(renderShader, uniformName);
+                        m_context->llights.at(selectedLight)->_l_light.positionLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].target", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.targetLoc = GetShaderLocation(renderShader, uniformName);
+                        m_context->llights.at(selectedLight)->_l_light.targetLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].color", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.colorLoc = GetShaderLocation(renderShader, uniformName);
+                        m_context->llights.at(selectedLight)->_l_light.colorLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
 
-                        UpdateLightValues(renderShader, m_context->llights.at(selectedLight)->_l_light);
+                        m_context->shaders->updateSingleLight(m_context, selectedLight);
                     }
 
                     m_context->llights.at(lastIndex)->deleted = true;
                     m_context->llights.at(lastIndex)->_l_light.enabled = false;
 
-                    UpdateLightValues(renderShader, m_context->llights.at(lastIndex)->_l_light);
+                    m_context->shaders->updateSingleLight(m_context, lastIndex);
 
                     selectedLight = -1;
-                    currLightsCount--;
+                    m_context->shaders->currLightsCount--;
 
-                    int numLightsLoc = GetShaderLocation(renderShader, "numLights");
-                    SetShaderValue(renderShader, numLightsLoc, &currLightsCount, SHADER_UNIFORM_INT);
+                    m_context->shaders->updateLights();
                 }
             }
         }
@@ -1129,19 +1060,29 @@ void Scene::draw(std::shared_ptr<Context>& m_context) {
     if (chunkSize > 100.0f) chunkSize = 100.0f;
     ImGui::EndDisabled();
 
+    static bool updateSolid = false;
+    static bool updatePreview = false;
+    static bool updateRender = false;
+    static bool updateWireframe = false;
+
     ImGui::Dummy(ImVec2(0, 5));
     m_context->fontMgr.setLG();
     ImGui::Text("Void Colors");
     ImGui::PopFont();
     ImGui::Dummy(ImVec2(0, 2.5f));
     ImGui::Text("Solid");
-    ImGui::ColorEdit3("##VoidColorSolidEdit", reinterpret_cast<float *>(&voidColSol));
+    updateSolid = ImGui::ColorEdit3("##VoidColorSolidEdit", reinterpret_cast<float *>(&voidColSol));
     ImGui::Text("Material Preview");
-    ImGui::ColorEdit3("##VoidColorMaterialPreviewEdit", reinterpret_cast<float *>(&voidColMat));
+    updatePreview = ImGui::ColorEdit3("##VoidColorMaterialPreviewEdit", reinterpret_cast<float *>(&voidColMat));
     ImGui::Text("Render");
-    ImGui::ColorEdit3("##VoidColorRenderEdit", reinterpret_cast<float *>(&voidColRen));
+    updateRender = ImGui::ColorEdit3("##VoidColorRenderEdit", reinterpret_cast<float *>(&voidColRen));
     ImGui::Text("Wireframe");
-    ImGui::ColorEdit3("##VoidColorWireframeEdit", reinterpret_cast<float *>(&voidColWir));
+    updateWireframe = ImGui::ColorEdit3("##VoidColorWireframeEdit", reinterpret_cast<float *>(&voidColWir));
+
+    if (updateSolid) m_context->shaders->voidColSolid = ImVecToColor(voidColSol);
+    else if (updatePreview) m_context->shaders->voidColPreview = ImVecToColor(voidColMat);
+    else if (updateRender) m_context->shaders->voidColRender = ImVecToColor(voidColRen);
+    else if (updateWireframe) m_context->shaders->voidColWireframe = ImVecToColor(voidColWir);
 
     if (shouldUpdateBuffers && (selectedEntity >= 0 && selectedEntity < m_context->entities.size())) {
         m_context->entities.at(selectedEntity)->UpdateBuffers();
@@ -1167,8 +1108,6 @@ void Scene::clean(std::shared_ptr<Context>& m_context) {
         UnloadModel(e.e_model);
     }
 
-    UnloadShader(solidShader);
-    UnloadShader(renderShader);
     CloseWindow();
 }
 

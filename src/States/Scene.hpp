@@ -17,13 +17,6 @@
 #include "../Debug/UV.hpp"
 #include "rlights.h"
 
-enum currentShader {
-    SOLID = 0,
-    M_PREVIEW = 1,
-    RENDER = 2,
-    WIREFRAME = 3
-};
-
 enum entity {
     TERRAIN = 0,
     ROCK = 1,
@@ -37,27 +30,13 @@ private:
     int selectedEntity;
     int selectedLight;
     int currentSh;
-    Shader solidShader;
-    Shader materialPreviewShader;
-    Shader renderShader;
     std::string curr_m;
     int entityToAdd;
     bool isGizmoDragged;
     bool isGizmoHovered;
-
-    // shader related variables
-    // solid shader
-    float lightColor[3];
-    glm::vec3 lightDir;
-    float lightDirection[3];
-    int uLightDirLoc;
-    int uBaseColorLoc;
+    Shader* shader;
 
     // lights
-    int currLightsCount = 0;
-    const unsigned short MAX_LIGHTS_COUNT;
-    int ambientLoc;
-    float ambientColor[4];
     int typeToAdd;
 
     // collision (to check if the entity was hit)
