@@ -1,6 +1,6 @@
-#include "RockType.hpp"
+#include "RockEntity.hpp"
 
-RockType::RockType(Model _model, const std::string &_name, const std::string &_type) :
+RockEntity::RockEntity(Model _model, const std::string &_name, const std::string &_type) :
 Entity(_model, _name, "rock"),
 frequency(0.3f),
 amplitude(0.5f),
@@ -8,12 +8,12 @@ rockType(0) {
 
 }
 
-RockType::RockType(Mesh _mesh, const std::string &_name, const std::string &_type) :
-RockType(LoadModelFromMesh(_mesh), _name, _type) {
+RockEntity::RockEntity(Mesh _mesh, const std::string &_name, const std::string &_type) :
+RockEntity(LoadModelFromMesh(_mesh), _name, _type) {
 
 }
 
-BoundingBox RockType::GenMeshBoundingBox(const Mesh& mesh, float pos[3]) {
+BoundingBox RockEntity::GenMeshBoundingBox(const Mesh& mesh, float pos[3]) {
     BoundingBox box;
 
     if (mesh.vertexCount == 0 || mesh.vertices == nullptr) return box;
@@ -46,13 +46,13 @@ BoundingBox RockType::GenMeshBoundingBox(const Mesh& mesh, float pos[3]) {
     return box;
 }
 
-void RockType::UpdateBuffers() {
+void RockEntity::UpdateBuffers() {
     RecalcNormals();
     UpdateMeshBuffer(*e_mesh, 0, e_vertices.data(), e_vertices.size() * sizeof(float), 0);
     UpdateMeshBuffer(*e_mesh, 2, e_normals.data(), e_normals.size() * sizeof(float), 0);
 }
 
-void RockType::RecalcNormals() {
+void RockEntity::RecalcNormals() {
     e_normals.assign(e_vertices.size(), 0.0f);
 
     for (size_t i = 0; i < e_indices.size(); i += 3) {

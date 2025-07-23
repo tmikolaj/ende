@@ -1,6 +1,6 @@
-#include "TerrainType.hpp"
+#include "TerrainEntity.hpp"
 
-TerrainType::TerrainType(Model _model, const std::string& _name, const std::string& _type) :
+TerrainEntity::TerrainEntity(Model _model, const std::string& _name, const std::string& _type) :
 Entity(_model, _name, _type),
 amplitude(0.5f),
 frequency(0.3f),
@@ -10,11 +10,11 @@ octaves(3) {
     e_boundingBox = GenMeshBoundingBox(*e_mesh, e_position);
 }
 
-TerrainType::TerrainType(Mesh _mesh, const std::string& _name, const std::string& _type) : TerrainType(LoadModelFromMesh(_mesh), _name, _type) {
+TerrainEntity::TerrainEntity(Mesh _mesh, const std::string& _name, const std::string& _type) : TerrainEntity(LoadModelFromMesh(_mesh), _name, _type) {
 
 }
 
-BoundingBox TerrainType::GenMeshBoundingBox(const Mesh& mesh, float pos[3]) {
+BoundingBox TerrainEntity::GenMeshBoundingBox(const Mesh& mesh, float pos[3]) {
     BoundingBox box;
 
     if (mesh.vertexCount == 0 || mesh.vertices == nullptr) return box;
@@ -47,14 +47,14 @@ BoundingBox TerrainType::GenMeshBoundingBox(const Mesh& mesh, float pos[3]) {
     return box;
 }
 
-void TerrainType::UpdateBuffers() {
+void TerrainEntity::UpdateBuffers() {
     RecalcNormals();
     UpdateMeshBuffer(*e_mesh, 0, e_vertices.data(), e_vertices.size() * sizeof(float), 0);
     UpdateMeshBuffer(*e_mesh, 1, e_indices.data(), e_indices.size() * sizeof(unsigned short), 0);
     UpdateMeshBuffer(*e_mesh, 2, e_normals.data(), e_normals.size() * sizeof(float), 0);
 }
 
-void TerrainType::RecalcNormals() {
+void TerrainEntity::RecalcNormals() {
     e_normals.assign(e_vertices.size(), 0.0f);
 
     for (size_t i = 0; i < e_indices.size(); i += 3) {

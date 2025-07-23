@@ -1,6 +1,6 @@
-#include "CustomMeshes.hpp"
+#include "CustomMeshFactory.hpp"
 
-Mesh CustomMeshes::GenMeshIcosahedron() {
+Mesh CustomMeshFactory::GenMeshIcosahedron() {
     float t = (1 + std::sqrt(5)) / 2.0f;
 
     std::vector<glm::vec3> positions = {
