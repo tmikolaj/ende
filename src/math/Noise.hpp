@@ -1,7 +1,6 @@
 #ifndef NOISE_HPP
 #define NOISE_HPP
 
-#include <cmath>
 #include <random>
 #include <external/glm/glm.hpp>
 
@@ -21,6 +20,8 @@ public:
 
     int seedValue;
 
+    bool improvedFakeNoise;
+
     Noise();
     ~Noise() = default;
 
@@ -30,12 +31,12 @@ public:
     int genNewSeedValue();
 
     // TERRAIN SPECIFIC NOISE
-    float getBasicPerlinTerrain(float x, float z, bool useSeed);
+    float getSimplePatternTerrain(float x, float z, bool useSeed);
     float getFakePerlinTerrain(float x, float z);
-    float getOctaveTerrain(float x, float z, bool useSeed);
+    float getFractalNoise(float x, float z, bool useSeed);
 
     // ROCK SPECIFIC NOISE
-    glm::vec3 getBasicPerlinRock(const glm::vec3& v, bool useSeed);
+    glm::vec3 getSimplePatternRock(const glm::vec3& v, bool useSeed);
 };
 
 #endif // NOISE_HPP
