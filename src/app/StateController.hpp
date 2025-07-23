@@ -1,9 +1,11 @@
-#ifndef STATEMANAGER_HPP
-#define STATEMANAGER_HPP
+#ifndef STATECONTROLLER_HPP
+#define STATECONTROLLER_HPP
 
 #include <stack>
 #include <memory>
-#include "States/bStateTemplate.hpp"
+#include "../states/BaseState.hpp"
+
+struct Context;
 
 enum stateIndex {
     STARTMENU = 0,
@@ -14,10 +16,10 @@ enum stateIndex {
 
 namespace Engine {
 
-class StateManager {
+class StateController {
 private:
-    std::stack<std::unique_ptr<bStateTemplate>> stateStack;
-    std::unique_ptr<bStateTemplate> newState;
+    std::stack<std::unique_ptr<BaseState>> stateStack;
+    std::unique_ptr<BaseState> newState;
 
     std::weak_ptr<Context> context;
 
@@ -31,15 +33,15 @@ private:
     // which will either remove, add or do nothing
     unsigned short latency;
 public:
-    StateManager();
-    ~StateManager() = default;
+    StateController();
+    ~StateController() = default;
 
     void setContext(std::weak_ptr<Context> ctx);
 
-    void add(std::unique_ptr<bStateTemplate> state, bool replace = false);
+    void add(std::unique_ptr<BaseState> state, bool replace = false);
     void popCurrent();
     void processState();
-    std::unique_ptr<bStateTemplate>& getCurrentState();
+    std::unique_ptr<BaseState>& getCurrentState();
     void requestStateChange(int stateIndex, bool replace = false, unsigned short changeLatency = 0);
     bool isChangePending();
 
@@ -49,4 +51,4 @@ public:
 
 }
 
-#endif //STATEMANAGER_HPP
+#endif // STATECONTROLLER_HPP

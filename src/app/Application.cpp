@@ -1,10 +1,14 @@
-#include "Program.hpp"
+#include <memory>
 
-Program::Program() :
+#include "Application.hpp"
+
+#include "../states/StartMenuState.hpp"
+
+Application::Application() :
 context(std::make_shared<Context>()) {
 
 }
-void Program::init() {
+void Application::init() {
     InitWindow(800, 600, "3DProcGen");
 
     context->states->setContext(context);
@@ -14,7 +18,7 @@ void Program::init() {
 
     context->fontMgr.init();
 
-    context->states->add(std::make_unique<StartMenu>());
+    context->states->add(std::make_unique<StartMenuState>());
     context->states->processState();
 
     context->shaders->init();
@@ -25,7 +29,7 @@ void Program::init() {
     context->camera->fovy = 45.0f;
     context->camera->projection = CAMERA_PERSPECTIVE;
 }
-void Program::run() {
+void Application::run() {
     int w_state = context->states->getWindowState();
     while (true) {
         while (!WindowShouldClose()) {
