@@ -1054,6 +1054,27 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             ImGui::SliderFloat("##RockFrequency", &rock->frequency, 0.01f, 1.0f);
 
             m_context->entities.at(selectedEntity)->UpdateBuffers();
+
+            int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
+
+            m_context->uiManager->Section("Seed", m_context->fontMgr.getLG());
+
+            ImGui::Dummy(ImVec2(0, 5));
+            ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities.at(selectedEntity)->e_seedEnable);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Seed Value");
+            bool shouldUpdateSeedValue = ImGui::InputInt("##SeedVal", &seedVal);
+            if (seedVal < -10000) seedVal = -10000;
+            if (seedVal > 10000) seedVal = 10000;
+            if (shouldUpdateSeedValue) noise.updateSeedValue(seedVal);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            if (ImGui::Button("Generate New Seed")) {
+                m_context->entities.at(selectedEntity)->e_seed = noise.genNewSeedValue();
+            }
+
+            ImGui::PopItemWidth();
         }
     }
     // SCENE SETTINGS
