@@ -3,6 +3,7 @@
 #include "../states/SceneEditorState.hpp"
 #include "../states/StartMenuState.hpp"
 #include "../states/EntityPaintState.hpp"
+#include "../states/SimulationState.hpp"
 
 #include "../core/Context.hpp"
 
@@ -70,6 +71,7 @@ void Engine::StateController::requestStateChange(int _stateIndex, bool replace, 
     if (_stateIndex == STARTMENU) newState = std::move(std::make_unique<StartMenuState>());
     else if (_stateIndex == SCENE) newState = std::move(std::make_unique<SceneEditorState>());
     else if (_stateIndex == ENTITYPAINT) newState = std::move(std::make_unique<EntityPaintState>());
+    else if (_stateIndex == SIMULATION) newState = std::move(std::make_unique<SimulationState>());
 
     m_replace = replace;
     m_add = true;
