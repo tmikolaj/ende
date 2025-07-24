@@ -356,7 +356,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     const char* shapers[] = { "", "Subdivision" };
     static int selectedShaper = 0;
 
-    const char* noiseTypes[] = { "Simple Pattern", "Fractal Noise", "Value Noise" };
+    const char* noiseTypes[] = { "Simple Pattern", "Fractal Noise", "Value Noise", "Perlin Noise" };
     const char* rockTypes[] = { "Basic Rock" };
     static int selectedNoiseType = 0;
     static int selectedRockType = 0;
@@ -959,12 +959,12 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
             static bool makeFractal = false;
 
-            int vertexCount = (int)m_context->entities.at(selectedEntity)->e_vertices.size() / 3;
+            int vertexCount = static_cast<int>(m_context->entities.at(selectedEntity)->e_vertices.size() / 3);
             for (int i = 0; i < vertexCount; i++) {
                 float x = m_context->entities.at(selectedEntity)->e_vertices[i * 3];
                 float z = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
 
-                if (terrain->noiseType == "perlin") {
+                if (terrain->noiseType == "simple") {
                     m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getSimplePatternTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 } else if (terrain->noiseType == "octave") {
@@ -972,6 +972,9 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
                 } else if (terrain->noiseType == "value") {
                     m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getValueNoiseTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable, makeFractal);
+
+                } else if (terrain->noiseType == "perlin") {
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getPerlinNoiseTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable, makeFractal);
 
                 }
             }
@@ -983,11 +986,17 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             ImGui::Combo("##ChooseNoiseType", &selectedNoiseType, noiseTypes, IM_ARRAYSIZE(noiseTypes));
 
             if (selectedNoiseType == 0) {
-                terrain->noiseType = "perlin";
+                terrain->noiseType = "simple";
+
             } else if (selectedNoiseType == 1) {
                 terrain->noiseType = "octave";
+
             } else if (selectedNoiseType == 2) {
                 terrain->noiseType = "value";
+
+            } else if (selectedNoiseType == 3) {
+                terrain->noiseType = "perlin";
+
             }
 
             shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Frequency", terrain->frequency, 0.01f, 1.0f);
@@ -996,12 +1005,12 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Amplitude", terrain->amplitude, 0.1f, 10.0f);
             m_context->uiManager->SetItemTooltip("Amplitude controls how tall the bumps are", startHoverAmp);
 
-            if (selectedNoiseType == 2) {
+            if (selectedNoiseType == 2 || selectedNoiseType == 3) {
                 ImGui::Dummy(ImVec2(0, 2.5f));
                 ImGui::Checkbox("Make Fractal", &makeFractal);
             }
 
-            if (selectedNoiseType == 1 || (selectedNoiseType == 2 && makeFractal)) {
+            if (selectedNoiseType == 1 || ((selectedNoiseType == 2 || selectedNoiseType == 3) && makeFractal)) {
 
                 shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Lacunarity", terrain->lacunarity, 0.01f, 10.0f);
                 m_context->uiManager->SetItemTooltip("Lacunarity increases frequency each octave", startHoverLac, hoverDelay);
@@ -1012,9 +1021,18 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 shouldUpdateBuffers |= m_context->uiManager->IntSlider("Octaves", terrain->octaves, 1, 12);
                 m_context->uiManager->SetItemTooltip("Octaves control how many laters of detail are", startHoverOct);
 
-                ImGui::Dummy(ImVec2(0, 2.5f));
-                ImGui::Checkbox("Use Improved Noise", &noise.improvedFakeNoise);
+                if (selectedNoiseType == 1) {
+                    ImGui::Dummy(ImVec2(0, 2.5f));
+                    ImGui::Checkbox("Use Improved Noise", &noise.improvedFakeNoise);
+                }
+                if (selectedNoiseType == 3) {
+                    ImGui::Dummy(ImVec2(0, 2.5f));
+                    ImGui::Checkbox("Enable Terracing", &noise.enableTerracing);
+                }
 
+            }
+            if (noise.enableTerracing) {
+                m_context->uiManager->FloatSlider("Terrace", noise.terraceSteps, 1.0f, 20.0f);
             }
             int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
 
