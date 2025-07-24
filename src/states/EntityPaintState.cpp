@@ -85,7 +85,7 @@ void EntityPaintState::process(std::shared_ptr<Context> &m_context) {
 
 void EntityPaintState::draw(std::shared_ptr<Context> &m_context) {
     BeginDrawing();
-    ClearBackground(Color{30, 30, 30, 255});
+    m_context->shaders->handleBackgroundClearing(m_context->currentSh);
 
     BeginMode3D(*m_context->camera);
 
@@ -112,7 +112,10 @@ void EntityPaintState::draw(std::shared_ptr<Context> &m_context) {
     if (code != -1) ImGui::OpenPopup("Warning");
 
     if (ImGui::BeginPopupModal("Warning", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
-        m_context->uiManager->Section("Warning!", m_context->fontMgr.getXL(), 2.5f);
+        m_context->fontMgr.setXL();
+        ImGui::Text("Warning");
+        ImGui::PopFont();
+        ImGui::SameLine();
 
         ImGui::Dummy(ImVec2(0, 5));
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Please switch back to scene in order to do that!");
