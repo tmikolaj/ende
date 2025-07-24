@@ -86,6 +86,9 @@ void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, in
         }
         if (ImGui::BeginTabItem("Simulation")) {
 
+            if (stateIndex != SIMULATION && stateIndex != ENTITYPAINT && !p_context->states->isChangePending()) {
+                p_context->states->requestStateChange(SIMULATION, false);
+            }
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
