@@ -60,6 +60,8 @@ add_executable(3DProdGen
         src/states/SceneEditorState.cpp
         src/states/SceneEditorState.hpp
         src/states/StartMenuState.cpp
+        src/states/SimulationState.cpp
+        src/states/SimulationState.hpp
 
         src/ui/AppUI.cpp
         src/ui/AppUI.hpp
