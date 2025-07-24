@@ -28,13 +28,17 @@ struct Context {
     std::unique_ptr<Camera3D> camera;
     std::unique_ptr<UIManager> uiManager;
     std::unique_ptr<Engine::ShaderManager> shaders;
+    int selectedEntity;
+    int currentSh;
 
     Context() :
     states(std::make_unique<Engine::StateController>()),
     ui(std::make_unique<AppUI>()),
     camera(std::make_unique<Camera3D>()),
     uiManager(std::make_unique<UIManager>()),
-    shaders(std::make_unique<Engine::ShaderManager>()) {
+    shaders(std::make_unique<Engine::ShaderManager>()),
+    selectedEntity(-1),
+    currentSh(0) {
 
     }
 };
