@@ -10,6 +10,10 @@ private:
     std::random_device rd;
     std::mt19937 gen;
     std::uniform_real_distribution<float> dist;
+
+    float fade(float t);
+    float hash(int x, int z, bool useSeed);
+    float lerp(float a, float b, float t);
 public:
     float frequency;
     float amplitude;
@@ -33,7 +37,8 @@ public:
     // TERRAIN SPECIFIC NOISE
     float getSimplePatternTerrain(float x, float z, bool useSeed);
     float getFakePerlinTerrain(float x, float z);
-    float getFractalNoise(float x, float z, bool useSeed);
+    float getFractalNoiseTerrain(float x, float z, bool useSeed);
+    float getValueNoiseTerrain(float x, float z, bool useSeed, bool makeFractal);
 
     // ROCK SPECIFIC NOISE
     glm::vec3 getSimplePatternRock(const glm::vec3& v, bool useSeed);
