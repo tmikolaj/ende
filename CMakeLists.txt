@@ -69,6 +69,9 @@ add_executable(3DProdGen
         src/ui/FontManager.hpp
         src/ui/UIManager.cpp
         src/ui/UIManager.hpp
+
+        src/physics/ThermalErosion.cpp
+        src/physics/ThermalErosion.hpp
 )
 
 target_link_libraries(3DProdGen
