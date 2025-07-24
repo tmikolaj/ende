@@ -356,7 +356,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     const char* shapers[] = { "", "Subdivision" };
     static int selectedShaper = 0;
 
-    const char* noiseTypes[] = { "Simple Pattern", "Fractal Noise" };
+    const char* noiseTypes[] = { "Simple Pattern", "Fractal Noise", "Value Noise" };
     const char* rockTypes[] = { "Basic Rock" };
     static int selectedNoiseType = 0;
     static int selectedRockType = 0;
@@ -957,6 +957,8 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             noise.octaves = terrain->octaves;
             noise.persistence = terrain->persistence;
 
+            static bool makeFractal = false;
+
             int vertexCount = (int)m_context->entities.at(selectedEntity)->e_vertices.size() / 3;
             for (int i = 0; i < vertexCount; i++) {
                 float x = m_context->entities.at(selectedEntity)->e_vertices[i * 3];
@@ -966,7 +968,10 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                     m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getSimplePatternTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
 
                 } else if (terrain->noiseType == "octave") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getFractalNoise(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getFractalNoiseTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+
+                } else if (terrain->noiseType == "value") {
+                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getValueNoiseTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable, makeFractal);
 
                 }
             }
@@ -981,6 +986,8 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 terrain->noiseType = "perlin";
             } else if (selectedNoiseType == 1) {
                 terrain->noiseType = "octave";
+            } else if (selectedNoiseType == 2) {
+                terrain->noiseType = "value";
             }
 
             shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Frequency", terrain->frequency, 0.01f, 1.0f);
@@ -989,7 +996,12 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Amplitude", terrain->amplitude, 0.1f, 10.0f);
             m_context->uiManager->SetItemTooltip("Amplitude controls how tall the bumps are", startHoverAmp);
 
-            if (selectedNoiseType == 1) {
+            if (selectedNoiseType == 2) {
+                ImGui::Dummy(ImVec2(0, 2.5f));
+                ImGui::Checkbox("Make Fractal", &makeFractal);
+            }
+
+            if (selectedNoiseType == 1 || (selectedNoiseType == 2 && makeFractal)) {
 
                 shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Lacunarity", terrain->lacunarity, 0.01f, 10.0f);
                 m_context->uiManager->SetItemTooltip("Lacunarity increases frequency each octave", startHoverLac, hoverDelay);
