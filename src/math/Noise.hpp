@@ -21,10 +21,12 @@ public:
     int octaves;
     float persistence;
     float lacunarity;
+    float terraceSteps;
 
     int seedValue;
 
     bool improvedFakeNoise;
+    bool enableTerracing;
 
     Noise();
     ~Noise() = default;
@@ -36,9 +38,11 @@ public:
 
     // TERRAIN SPECIFIC NOISE
     float getSimplePatternTerrain(float x, float z, bool useSeed);
-    float getFakePerlinTerrain(float x, float z);
+    float getFakePerlinTerrain(float x, float z); // HELPER for getFractalNoiseTerrain!
     float getFractalNoiseTerrain(float x, float z, bool useSeed);
     float getValueNoiseTerrain(float x, float z, bool useSeed, bool makeFractal);
+    float getPerlinNoiseTerrain(float x, float z, bool useSeed, bool makeFractal);
+    float getSinglePerlinNoiseTerrain(float x, float z, float freq, bool useSeed); // HELPER for getPerlinNoiseTerrain
 
     // ROCK SPECIFIC NOISE
     glm::vec3 getSimplePatternRock(const glm::vec3& v, bool useSeed);
