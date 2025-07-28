@@ -19,8 +19,8 @@ public:
     AppUI() = default;
     ~AppUI() = default;
 
-    int DrawMainMenuBar(std::shared_ptr<Context>& p_context, int& currentSh);
-    void DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, int stateIndex);
+    static int DrawMainMenuBar(std::shared_ptr<Context>& p_context, int& currentSh);
+    static void DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, int stateIndex);
 };
 
 #endif //APPUI_HPP
