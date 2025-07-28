@@ -11,7 +11,7 @@ static constexpr float EPS = 1e-4f;
 
 ThermalErosion::ThermalErosion() :
 talus(1.0f),
-strength(1.0f),
+strength(0.5f),
 iterations(1),
 use4(true) {
 
@@ -110,9 +110,15 @@ void ThermalErosion::Apply(std::vector<float>& vertices) {
                     float heightDiff = h0 - heightMap[neighborIndex];
 
                     if (heightDiff > talus) {
-                        float amount = (heightDiff - talus) * strength;
-                        delta[index] -= amount;
-                        delta[neighborIndex] += amount;
+                        float raw = (heightDiff - talus) * (1.0f + strength);
+                        float maxTransfer;
+                        if (width >= 100 || height >= 100) {
+                            maxTransfer = 0.0005f;
+                        } else if (width < 100 || height < 100) {
+                            maxTransfer = 0.002f;
+                        }
+                        delta[index] -= std::min(raw, maxTransfer);
+                        delta[neighborIndex] += std::min(raw, maxTransfer);
                     }
                 }
             }
