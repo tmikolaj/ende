@@ -126,7 +126,7 @@ void SimulationState::draw(std::shared_ptr<Context>& p_context) {
             p_context->uiManager->FloatSlider("Talus", thermalErosion.talus, 0.5f, highestY);
             p_context->uiManager->SetItemTooltip("Erosion occurs when the height difference between a point and its neighbor exceeds this threshold (talus angle)", startHoverTal);
 
-            p_context->uiManager->FloatSlider("Strength", thermalErosion.strength, 0.1f, 10.0f);
+            p_context->uiManager->FloatSlider("Strength", thermalErosion.strength, 0.0f, 2.0f);
             p_context->uiManager->SetItemTooltip("Controls how much material is transferred during each erosion step (higher = stronger effect)", startHoverStr);
 
             p_context->uiManager->IntInput("Iterations", thermalErosion.iterations, false);
