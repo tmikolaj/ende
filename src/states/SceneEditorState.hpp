@@ -25,9 +25,7 @@ private:
     // render/draw variables
     RenderTexture2D sceneTexture;
     RenderTexture2D gizmoTexture;
-    int selectedEntity;
     int selectedLight;
-    int currentSh;
     std::string curr_m;
     int entityToAdd;
     bool isGizmoDragged;
@@ -86,10 +84,10 @@ public:
     SceneEditorState();
     ~SceneEditorState() override = default;
 
-    void init(std::shared_ptr<Context>& m_context) override;
-    void process(std::shared_ptr<Context>& m_context) override;
-    void draw(std::shared_ptr<Context>& m_context) override;
-    void clean(std::shared_ptr<Context>& m_context) override;
+    void init(std::shared_ptr<Context>& p_context) override;
+    void process(std::shared_ptr<Context>& p_context) override;
+    void draw(std::shared_ptr<Context>& p_context) override;
+    void clean(std::shared_ptr<Context>& p_context) override;
 
     Color ImVecToColor(ImVec4 _color);
     void HandleMouseSelection(const int& btn, int& selectedEntity, bool& e_context, const Camera3D& _camera, const std::shared_ptr<Context>& _m_context, Ray _ray);

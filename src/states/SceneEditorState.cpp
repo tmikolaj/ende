@@ -19,10 +19,10 @@ openRenamePopup(false) {
 
 }
 
-void SceneEditorState::init(std::shared_ptr<Context>& m_context) {
+void SceneEditorState::init(std::shared_ptr<Context>& p_context) {
     SetWindowSize(1920, 1080);
     SetWindowPosition(0, 0);
-    m_context->states->setWindowState(NONE);
+    p_context->states->setWindowState(NONE);
 
     // lights init
     typeToAdd = -1;
@@ -30,16 +30,14 @@ void SceneEditorState::init(std::shared_ptr<Context>& m_context) {
     // render/draw variables init
     sceneTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     gizmoTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-    selectedEntity = -1;
     selectedLight = -1;
-    currentSh = 0;
     curr_m = "SOLID";
     onSelectionMeshColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
     onSelectionWiresColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
     entityToAdd = -1;
     isGizmoDragged = false;
     isGizmoHovered = false;
-    shader = m_context->shaders->getShader(SOLID);
+    shader = p_context->shaders->getShader(SOLID);
 
     // camera related variables init
     zoomSpeed = 1.0f;
@@ -73,21 +71,15 @@ void SceneEditorState::init(std::shared_ptr<Context>& m_context) {
     normalsColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
     showUV = false;
 
-    // collision (to check if the entity was hit) init
-    Ray ray = { 0 };
-
     shouldOpenContextPopup = false;
     contextForEntity = true;
     hoverDelay = 1.0f;
 
-    m_context->shaders->handleSetShaderValue(SOLID, m_context);
-
-    for (auto& e : m_context->entities) {
-        e->UpdateBuffers();
-    }
+    p_context->shaders->handleSetShaderValue(SOLID, p_context);
 }
 
-void SceneEditorState::process(std::shared_ptr<Context>& m_context) {
+void SceneEditorState::process(std::shared_ptr<Context>& p_context) {
+
     if (!ImGui::GetIO().WantCaptureMouse) {
         distance -= GetMouseWheelMove() * zoomSpeed;
 
@@ -96,7 +88,7 @@ void SceneEditorState::process(std::shared_ptr<Context>& m_context) {
             0 + distance,
             0 + distance
         };
-        m_context->camera->position = camPos;
+        p_context->camera->position = camPos;
     }
 
     int btn;
@@ -105,32 +97,32 @@ void SceneEditorState::process(std::shared_ptr<Context>& m_context) {
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         btn = MOUSE_BUTTON_RIGHT;
     }
-    if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, selectedEntity, shouldOpenContextPopup, *m_context->camera, m_context, ray);
+    if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, p_context->selectedEntity, shouldOpenContextPopup, *p_context->camera, p_context, ray);
 
-    m_context->shaders->handleShaderSelection(currentSh);
+    p_context->shaders->handleShaderSelection(p_context->currentSh);
 
-    if (currentSh == RENDER) m_context->shaders->updateCamPos(m_context);
+    if (p_context->currentSh == RENDER) p_context->shaders->updateCamPos(p_context);
 
     static bool assignedTexture = false;
     static int indexAssignedTo = -1;
-    if (showUV && (selectedEntity >= 0 && selectedEntity < m_context->entities.size())) {
+    if (showUV && (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size())) {
         if (!assignedTexture) {
             Texture2D checker = uvController.GenerateCheckerTexture();
-            Texture2D curr = m_context->entities.at(selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture;
+            Texture2D curr = p_context->entities.at(p_context->selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture;
             uvController.swapTexture(curr, checker);
-            m_context->entities.at(selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = checker;
-            indexAssignedTo = selectedEntity;
+            p_context->entities.at(p_context->selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = checker;
+            indexAssignedTo = p_context->selectedEntity;
             assignedTexture = true;
         }
-    } else if (!showUV && (indexAssignedTo >= 0 && indexAssignedTo < m_context->entities.size())) {
-        m_context->entities.at(indexAssignedTo)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = uvController.swappedTexture;
+    } else if (!showUV && (indexAssignedTo >= 0 && indexAssignedTo < p_context->entities.size())) {
+        p_context->entities.at(indexAssignedTo)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = uvController.swappedTexture;
         assignedTexture = false;
     }
 }
 
-void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
+void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
     if (WindowShouldClose()) {
-        m_context->states->setWindowState(EXIT);
+        p_context->states->setWindowState(EXIT);
         return;
     }
 
@@ -141,54 +133,54 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     // -----------------
     BeginTextureMode(sceneTexture);
 
-    m_context->shaders->updateLightValues(m_context);
+    p_context->shaders->updateLightValues(p_context);
 
-    m_context->shaders->handleBackgroundClearing(currentSh);
+    p_context->shaders->handleBackgroundClearing(p_context->currentSh);
 
     // apply shader to all entities
-    if (!m_context->entities.empty()) {
-        for (const auto& entityPtr : m_context->entities) {
+    if (!p_context->entities.empty()) {
+        for (const auto& entityPtr : p_context->entities) {
             Entity& e = *entityPtr;
-            if (currentSh == SOLID) {
-                shader = m_context->shaders->getShader(SOLID);
-                m_context->shaders->handleSetShaderValue(SOLID, m_context);
+            if (p_context->currentSh == SOLID) {
+                shader = p_context->shaders->getShader(SOLID);
+                p_context->shaders->handleSetShaderValue(SOLID, p_context);
                 e.e_model.materials[0].shader = *shader;
-            } else if (currentSh == M_PREVIEW || currentSh == WIREFRAME) {
-                shader = m_context->shaders->getShader(M_PREVIEW);
+            } else if (p_context->currentSh == M_PREVIEW || p_context->currentSh == WIREFRAME) {
+                shader = p_context->shaders->getShader(M_PREVIEW);
                 e.e_model.materials[0].shader = *shader;
             } else {
-                shader = m_context->shaders->getShader(RENDER);
-                m_context->shaders->handleSetShaderValue(RENDER, m_context);
+                shader = p_context->shaders->getShader(RENDER);
+                p_context->shaders->handleSetShaderValue(RENDER, p_context);
                 e.e_model.materials[0].shader = *shader;
             }
         }
     }
 
-    if (colorChanged) m_context->shaders->changeColor();
-    if (dirChanged) m_context->shaders->changeDirection();
+    if (colorChanged) p_context->shaders->changeColor();
+    if (dirChanged) p_context->shaders->changeDirection();
 
-    BeginMode3D(*m_context->camera);
+    BeginMode3D(*p_context->camera);
 
     // draw entities
-    for (int i = 0; i < m_context->entities.size(); i++) {
-        if (!m_context->entities.at(i)->e_visible) continue;
+    for (int i = 0; i < p_context->entities.size(); i++) {
+        if (!p_context->entities.at(i)->e_visible) continue;
 
-        Vector3 epos(m_context->entities.at(i)->e_position[0], m_context->entities.at(i)->e_position[1], m_context->entities.at(i)->e_position[2]);
+        Vector3 epos(p_context->entities.at(i)->e_position[0], p_context->entities.at(i)->e_position[1], p_context->entities.at(i)->e_position[2]);
 
-        if (selectedEntity == i) {
-            if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionMeshColor));
-            if (currentSh != SOLID) DrawModelWires(m_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionWiresColor));
+        if (p_context->selectedEntity == i) {
+            if ((p_context->currentSh != WIREFRAME && !toggleWireframe) || p_context->currentSh == SOLID) DrawModel(p_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionMeshColor));
+            if (p_context->currentSh != SOLID) DrawModelWires(p_context->entities.at(i)->e_model, epos, 1.0f, ImVecToColor(onSelectionWiresColor));
         } else {
-            if ((currentSh != WIREFRAME && !toggleWireframe) || currentSh == SOLID) DrawModel(m_context->entities.at(i)->e_model, epos, 1.0f, m_context->entities.at(i)->e_color);
-            if (currentSh != SOLID && (showWires || toggleWireframe || currentSh == WIREFRAME)) DrawModelWires(m_context->entities.at(i)->e_model, epos, 1.0f, RED);
+            if ((p_context->currentSh != WIREFRAME && !toggleWireframe) || p_context->currentSh == SOLID) DrawModel(p_context->entities.at(i)->e_model, epos, 1.0f, p_context->entities.at(i)->e_color);
+            if (p_context->currentSh != SOLID && (showWires || toggleWireframe || p_context->currentSh == WIREFRAME)) DrawModelWires(p_context->entities.at(i)->e_model, epos, 1.0f, RED);
         }
     }
 
-    if ((selectedLight >= 0 && selectedLight < m_context->llights.size()) && m_context->llights.at(selectedLight)->_l_light.enabled) {
-        DrawSphere(m_context->llights.at(selectedLight)->_l_light.position, 0.5f, ImVecToColor(onSelectionMeshColor));
+    if ((selectedLight >= 0 && selectedLight < p_context->llights.size()) && p_context->llights.at(selectedLight)->_l_light.enabled) {
+        DrawSphere(p_context->llights.at(selectedLight)->_l_light.position, 0.5f, ImVecToColor(onSelectionMeshColor));
     }
 
-    if (showGrid && currentSh != RENDER) DrawGrid(100, chunkSize);
+    if (showGrid && p_context->currentSh != RENDER) DrawGrid(100, chunkSize);
 
     EndMode3D();
 
@@ -203,20 +195,20 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     BeginTextureMode(gizmoTexture);
     ClearBackground((Color){0, 0, 0, 0});
 
-    BeginMode3D(*m_context->camera);
+    BeginMode3D(*p_context->camera);
     rlDisableDepthTest();
 
-    if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-        if (showEdgeNormals) normalController.DrawEdgeNormals(*m_context->entities.at(selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
-        if (showFaceNormals) normalController.DrawFaceNormals(*m_context->entities.at(selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
-        if (showVertexNormals) normalController.DrawVertexNormals(*m_context->entities.at(selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
+    if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
+        if (showEdgeNormals) normalController.DrawEdgeNormals(*p_context->entities.at(p_context->selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
+        if (showFaceNormals) normalController.DrawFaceNormals(*p_context->entities.at(p_context->selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
+        if (showVertexNormals) normalController.DrawVertexNormals(*p_context->entities.at(p_context->selectedEntity)->e_mesh, length, ImVecToColor(normalsColor));
     }
 
     static int dragAxis; // X = 0, Y = 1, Z = 2
     static glm::vec3 dragStartEntityPos;
     static glm::vec3 dragStartHitPoint;
 
-    if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+    if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
         float size = 0.05f * (distance /  5.0f);
 
         float lineLength = size * 8.0f;
@@ -229,7 +221,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         constexpr glm::vec3 glAxisY = { 0, 1, 0 };
         constexpr glm::vec3 glAxisZ = { 0, 0, 1 };
 
-        Vector3 rlEpos(m_context->entities.at(selectedEntity)->e_position[0], m_context->entities.at(selectedEntity)->e_position[1], m_context->entities.at(selectedEntity)->e_position[2]);
+        Vector3 rlEpos(p_context->entities.at(p_context->selectedEntity)->e_position[0], p_context->entities.at(p_context->selectedEntity)->e_position[1], p_context->entities.at(p_context->selectedEntity)->e_position[2]);
         glm::vec3 glEpos(rlEpos.x, rlEpos.y, rlEpos.z);
 
         BoundingBox boxX;
@@ -252,7 +244,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         DrawLine3D(rlEpos, Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), BLUE);
         DrawCube(Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), size, size, size, BLUE);
 
-        Ray gizmoRay = GetScreenToWorldRay(GetMousePosition(), *m_context->camera);
+        Ray gizmoRay = GetScreenToWorldRay(GetMousePosition(), *p_context->camera);
         Vector2 mousePos = GetMousePosition();
 
         RayCollision hitX = GetRayCollisionBox(gizmoRay, boxX);
@@ -283,7 +275,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         }
 
         if (isGizmoDragged && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-            Ray ray = GetScreenToWorldRay(GetMousePosition(), *m_context->camera);
+            Ray ray = GetScreenToWorldRay(GetMousePosition(), *p_context->camera);
             glm::vec3 rayOrigin = glm::vec3(ray.position.x, ray.position.y, ray.position.z);
             glm::vec3 rayDirection = glm::normalize(glm::vec3(ray.direction.x, ray.direction.y, ray.direction.z));
 
@@ -302,11 +294,11 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 float offset = glm::dot(hitPoint - dragStartHitPoint, axisDirection);
                 glm::vec3 newPos = dragStartEntityPos + axisDirection * offset;
 
-                m_context->entities.at(selectedEntity)->e_position[0] = newPos.x;
-                m_context->entities.at(selectedEntity)->e_position[1] = newPos.y;
-                m_context->entities.at(selectedEntity)->e_position[2] = newPos.z;
+                p_context->entities.at(p_context->selectedEntity)->e_position[0] = newPos.x;
+                p_context->entities.at(p_context->selectedEntity)->e_position[1] = newPos.y;
+                p_context->entities.at(p_context->selectedEntity)->e_position[2] = newPos.z;
 
-                m_context->entities.at(selectedEntity)->e_boundingBox = m_context->entities.at(selectedEntity)->GenMeshBoundingBox(*m_context->entities.at(selectedEntity)->e_mesh, m_context->entities.at(selectedEntity)->e_position);
+                p_context->entities.at(p_context->selectedEntity)->e_boundingBox = p_context->entities.at(p_context->selectedEntity)->GenMeshBoundingBox(*p_context->entities.at(p_context->selectedEntity)->e_mesh, p_context->entities.at(p_context->selectedEntity)->e_position);
             }
         }
 
@@ -367,7 +359,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     static bool maxLightsPopupOpen = false;
     static bool settingsPopupOpen = false;
 
-    int code = m_context->ui->DrawMainMenuBar(m_context, currentSh);
+    int code = p_context->ui->DrawMainMenuBar(p_context, p_context->currentSh);
 
     if (code != -1) {
         if (code == OPEN_SETTINGS) ImGui::OpenPopup("Settings");
@@ -383,7 +375,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar)) {
 
         ImGui::Dummy(ImVec2(0, 2.5f));
-        m_context->fontMgr.setXL();
+        p_context->fontMgr.setXL();
         ImGui::Text("Preferences");
         ImGui::PopFont();
 
@@ -415,14 +407,14 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::Checkbox("Strict Search", &useStrictSearch);
                 break;
             case 1:
-                m_context->uiManager->FloatInput("Zoom Speed", zoomSpeed, true, 1.0f, 50.0f);
+                p_context->uiManager->FloatInput("Zoom Speed", zoomSpeed, true, 1.0f, 50.0f);
                 break;
             case 2:
                 ImGui::Text("Solid Shader");
-                colorChanged = ImGui::ColorEdit3("##SolidLightColor", m_context->shaders->lightColor);
+                colorChanged = ImGui::ColorEdit3("##SolidLightColor", p_context->shaders->lightColor);
                 ImGui::Dummy(ImVec2(0, 2.5f));
                 ImGui::Text("Light Direction");
-                dirChanged = ImGui::SliderFloat3("##SolidLightDirection", m_context->shaders->lightDirection, -1.0f, 1.0f);
+                dirChanged = ImGui::SliderFloat3("##SolidLightDirection", p_context->shaders->lightDirection, -1.0f, 1.0f);
 
                 break;
             case 3:
@@ -430,7 +422,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::Checkbox("Show Face Normals", &showFaceNormals);
                 ImGui::Checkbox("Show Edge Normals", &showEdgeNormals);
                 if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::BeginDisabled();
-                m_context->uiManager->FloatSlider("Normals Length", length, 0.1f, 5.0f);
+                p_context->uiManager->FloatSlider("Normals Length", length, 0.1f, 5.0f);
                 if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::EndDisabled();
                 ImGui::Checkbox("Check UV (selected entity)", &showUV);
                 break;
@@ -452,7 +444,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     // -----------
     if (typeToAdd != -1) {
 
-        if (m_context->shaders->currLightsCount >= m_context->shaders->MAX_LIGHTS_COUNT) {
+        if (p_context->shaders->currLightsCount >= p_context->shaders->MAX_LIGHTS_COUNT) {
             maxLightsPopupOpen = true;
 
         } else {
@@ -461,7 +453,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             Color color = WHITE;
             bool reused = false;
 
-            for (auto& lightPtr : m_context->llights) {
+            for (auto& lightPtr : p_context->llights) {
                 if (lightPtr->deleted) {
                     lightPtr->deleted = false;
                     lightPtr->_l_light.type = typeToAdd;
@@ -471,20 +463,20 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                     lightPtr->_l_light.enabled = true;
                     lightPtr->name = typeToAdd == LIGHT_POINT ? "point light" : "directional light";
 
-                    UpdateLightValues(*m_context->shaders->getShader(RENDER), lightPtr->_l_light);
-                    m_context->shaders->currLightsCount++;
+                    UpdateLightValues(*p_context->shaders->getShader(RENDER), lightPtr->_l_light);
+                    p_context->shaders->currLightsCount++;
                     reused = true;
                     break;
                 }
             }
 
             if (!reused) {
-                Light rawLight = CreateLight(typeToAdd, pos, target, color, *m_context->shaders->getShader(RENDER));
-                m_context->llights.push_back(std::make_unique<lLight>(typeToAdd == LIGHT_POINT ? "point light" : "directional light", rawLight));
-                m_context->shaders->currLightsCount++;
+                Light rawLight = CreateLight(typeToAdd, pos, target, color, *p_context->shaders->getShader(RENDER));
+                p_context->llights.push_back(std::make_unique<lLight>(typeToAdd == LIGHT_POINT ? "point light" : "directional light", rawLight));
+                p_context->shaders->currLightsCount++;
             }
 
-            m_context->shaders->updateLights();
+            p_context->shaders->updateLights();
         }
 
         typeToAdd = -1;
@@ -507,45 +499,24 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         ImGui::OpenPopup("AddEntity");
         if (ImGui::BeginPopupModal("AddEntity", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
             if (entityToAdd == TERRAIN) {
-                static TerrainEntity* _terrain;
-                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
 
-                    if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-                        _terrain = dynamic_cast<TerrainEntity*>(m_context->entities.at(selectedEntity).get());
-                    }
-                } else {
-                    _terrain = nullptr;
-                }
-
-                static bool pushed = false;
+                bool terrainCreated = false;
                 static float width = 10;
                 static float length = 10;
                 static float resX = 20;
                 static float resZ = 20;
-                static bool shouldUpdate = false;
 
-                if (!pushed || shouldUpdate) {
-                    if (shouldUpdate) m_context->entities.pop_back();
-                    shouldUpdate = false;
-                    m_context->entities.emplace_back(std::make_unique<TerrainEntity>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
-                    selectedEntity = static_cast<int>(m_context->entities.size() - 1);
-                    _terrain = dynamic_cast<TerrainEntity*>(m_context->entities.at(selectedEntity).get());
-                    _terrain->noiseType = "perlin";
-                    pushed = true;
-                }
-
-                m_context->fontMgr.setXL();
+                p_context->fontMgr.setXL();
                 ImGui::Text("Terrain Settings");
                 ImGui::PopFont();
 
                 ImGui::Dummy(ImVec2(0, 2.5f));
 
-                m_context->entities.at(selectedEntity)->UpdateBuffers();
                 ImGui::PushItemWidth(340);
 
                 ImGui::PopItemWidth();
 
-                m_context->fontMgr.setLG();
+                p_context->fontMgr.setLG();
                 ImGui::Text("General");
                 ImGui::PopFont();
 
@@ -558,10 +529,10 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::Text("Resolution X");
 
                 ImGui::PushItemWidth(165);
-                shouldUpdate |= ImGui::InputFloat("##Width", &width);
+                ImGui::InputFloat("##Width", &width);
 
                 ImGui::SameLine();
-                shouldUpdate |= ImGui::InputFloat("##Resolution X", &resX);
+                ImGui::InputFloat("##Resolution X", &resX);
 
                 ImGui::Dummy(ImVec2(0, 2.5f));
                 ImGui::Text("Length");
@@ -571,28 +542,39 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 ImGui::SameLine();
                 ImGui::Text("Resolution Z");
 
-                shouldUpdate |= ImGui::InputFloat("##Length", &length);
+                ImGui::InputFloat("##Length", &length);
 
                 ImGui::SameLine();
-                shouldUpdate |= ImGui::InputFloat("##Resolution Z", &resZ);
+                ImGui::InputFloat("##Resolution Z", &resZ);
                 ImGui::PopItemWidth();
 
                 ImGui::Dummy(ImVec2(0, 5));
 
-                if (ImGui::Button("Create")) {
-                    ImGui::CloseCurrentPopup();
-                    entityToAdd = -1;
-                    pushed = false;
+                if (!terrainCreated) {
+                    if (ImGui::Button("Create")) {
+
+                        TerrainEntity* _terrain;
+                        p_context->entities.emplace_back(std::make_unique<TerrainEntity>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
+                        p_context->selectedEntity = static_cast<int>(p_context->entities.size() - 1);
+                        p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
+                        _terrain->width = width;
+                        _terrain->height = length;
+                        ImGui::CloseCurrentPopup();
+                        entityToAdd = -1;
+                        _terrain = dynamic_cast<TerrainEntity*>(p_context->entities.at(p_context->selectedEntity).get());
+                        _terrain->noiseType = "simple";
+                        terrainCreated = true;
+                    }
                 }
             // ----------------
             //      ROCK
             // ----------------
             } else if (entityToAdd == ROCK) {
                 static RockEntity* _rock;
-                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+                if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
 
-                    if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-                        _rock = dynamic_cast<RockEntity*>(m_context->entities.at(selectedEntity).get());
+                    if (p_context->entities.at(p_context->selectedEntity)->e_type == "rock") {
+                        _rock = dynamic_cast<RockEntity*>(p_context->entities.at(p_context->selectedEntity).get());
                     }
                 } else {
                     _rock = nullptr;
@@ -601,20 +583,20 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
                 static bool pushed = false;
 
                 if (!pushed) {
-                    m_context->entities.emplace_back(std::make_unique<RockEntity>(customMeshes.GenMeshIcosahedron(), "rock", "rock"));
-                    selectedEntity = static_cast<int>(m_context->entities.size() - 1);
-                    _rock = dynamic_cast<RockEntity*>(m_context->entities.at(selectedEntity).get());
-                    m_context->entities.at(selectedEntity)->e_boundingBox = m_context->entities.at(selectedEntity)->GenMeshBoundingBox(*m_context->entities.at(selectedEntity)->e_mesh, m_context->entities.at(selectedEntity)->e_position);
+                    p_context->entities.emplace_back(std::make_unique<RockEntity>(customMeshes.GenMeshIcosahedron(), "rock", "rock"));
+                    p_context->selectedEntity = static_cast<int>(p_context->entities.size() - 1);
+                    _rock = dynamic_cast<RockEntity*>(p_context->entities.at(p_context->selectedEntity).get());
+                    p_context->entities.at(p_context->selectedEntity)->e_boundingBox = p_context->entities.at(p_context->selectedEntity)->GenMeshBoundingBox(*p_context->entities.at(p_context->selectedEntity)->e_mesh, p_context->entities.at(p_context->selectedEntity)->e_position);
                     pushed = true;
                 }
 
-                m_context->fontMgr.setXL();
+                p_context->fontMgr.setXL();
                 ImGui::Text("Rock Settings");
                 ImGui::PopFont();
 
                 ImGui::Dummy(ImVec2(0, 2.5f));
 
-                m_context->entities.at(selectedEntity)->UpdateBuffers();
+                p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
 
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Additional settings not necessary!");
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Everything provided after creating the mesh!");
@@ -634,7 +616,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     // --------------
     // STATE TAB BAR
     // --------------
-    m_context->ui->DrawStateBar(m_context, currentSh, SCENE);
+    p_context->ui->DrawStateBar(p_context, p_context->currentSh, SCENE);
 
     int mw = GetScreenWidth();
     int mh = GetScreenHeight();
@@ -672,11 +654,11 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     // SCENE ENTITIES
     // ---------------
     ImGui::PushItemWidth(200);
-    m_context->uiManager->Section("Scene Entities", m_context->fontMgr.getXXL());
+    p_context->uiManager->Section("Scene Entities", p_context->fontMgr.getXXL());
 
     ImGui::PushItemWidth(380);
 
-    m_context->fontMgr.setLG();
+    p_context->fontMgr.setLG();
     if (!inputActive) {
         if (ImGui::Selectable("Search entity...")) {
             inputActive = true;
@@ -702,14 +684,14 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
     ImGui::PopItemWidth();
 
-    if (m_context->entities.empty()) {
+    if (p_context->entities.empty()) {
         ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No entities found!");
     }
 
     std::string substringToSearch = searchBuffer;
 
-    for (int i = 0; i < m_context->entities.size(); i++) {
-        const std::string& entityName = m_context->entities.at(i)->e_name;
+    for (int i = 0; i < p_context->entities.size(); i++) {
+        const std::string& entityName = p_context->entities.at(i)->e_name;
 
         if (!substringToSearch.empty()) {
             if (!useStrictSearch) {
@@ -720,30 +702,30 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         }
 
         ImGui::PushID("Entity" + i);
-        if (ImGui::Selectable(m_context->entities.at(i)->e_name.c_str(), selectedEntity == i)) {
-            selectedEntity = i;
+        if (ImGui::Selectable(p_context->entities.at(i)->e_name.c_str(), p_context->selectedEntity == i)) {
+            p_context->selectedEntity = i;
             selectedLight = -1;
         }
         ImGui::PopID();
 
         if ((ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) || shouldOpenContextPopup) {
-            if (!shouldOpenContextPopup) selectedEntity = i;
+            if (!shouldOpenContextPopup) p_context->selectedEntity = i;
             shouldOpenContextPopup = false;
             ImGui::OpenPopup("Context");
             contextForEntity = true;
         }
     }
-    if (m_context->llights.empty()) {
-        m_context->fontMgr.setMD();
+    if (p_context->llights.empty()) {
+        p_context->fontMgr.setMD();
         ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "No lights found!");
         ImGui::PopFont();
     } else {
-        for (int i = 0; i < m_context->llights.size(); i++) {
-            if (m_context->llights.at(i)->deleted) continue;
+        for (int i = 0; i < p_context->llights.size(); i++) {
+            if (p_context->llights.at(i)->deleted) continue;
             ImGui::PushID("Light" + i);
-            if (ImGui::Selectable(m_context->llights.at(i)->name.c_str(), selectedLight == i)) {
+            if (ImGui::Selectable(p_context->llights.at(i)->name.c_str(), selectedLight == i)) {
                 selectedLight = i;
-                selectedEntity = -1;
+                p_context->selectedEntity = -1;
             }
             ImGui::PopID();
 
@@ -759,21 +741,21 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     if (ImGui::BeginPopup("Context")) {
         if (contextForEntity) {
             if (ImGui::MenuItem("Rename")) {
-                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+                if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
 
-                    strncpy(renameBuffer, m_context->entities.at(selectedEntity)->e_name.c_str(), sizeof(renameBuffer));
+                    strncpy(renameBuffer, p_context->entities.at(p_context->selectedEntity)->e_name.c_str(), sizeof(renameBuffer));
                     renameBuffer[sizeof(renameBuffer) - 1] = '\0';
                     openRenamePopup = true;
                 }
             }
-            std::string label = m_context->entities.at(selectedEntity)->e_visible ? "Hide" : "Show";
+            std::string label = p_context->entities.at(p_context->selectedEntity)->e_visible ? "Hide" : "Show";
             if (ImGui::MenuItem(label.c_str())) {
-                m_context->entities.at(selectedEntity)->e_visible = !m_context->entities.at(selectedEntity)->e_visible;
+                p_context->entities.at(p_context->selectedEntity)->e_visible = !p_context->entities.at(p_context->selectedEntity)->e_visible;
             }
             if (ImGui::MenuItem("Delete")) {
-                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+                if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
 
-                    std::unique_ptr<Entity>& entity = m_context->entities.at(selectedEntity);
+                    std::unique_ptr<Entity>& entity = p_context->entities.at(p_context->selectedEntity);
 
                     for (auto& shaper : entity->e_shapers) {
                         delete shaper;
@@ -781,60 +763,60 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
                     UnloadModel(entity->e_model);
 
-                    m_context->entities.erase(m_context->entities.begin() + selectedEntity);
-                    selectedEntity = -1;
+                    p_context->entities.erase(p_context->entities.begin() + p_context->selectedEntity);
+                    p_context->selectedEntity = -1;
                 }
             }
         } else {
             if (ImGui::MenuItem("Rename")) {
-                if (selectedLight >= 0 && selectedLight < m_context->llights.size()) {
+                if (selectedLight >= 0 && selectedLight < p_context->llights.size()) {
 
-                    strncpy(renameBuffer, m_context->llights.at(selectedLight)->name.c_str(), sizeof(renameBuffer));
+                    strncpy(renameBuffer, p_context->llights.at(selectedLight)->name.c_str(), sizeof(renameBuffer));
                     renameBuffer[sizeof(renameBuffer) - 1] = '\0';
                     openRenamePopup = true;
                 }
             }
-            std::string label = m_context->llights.at(selectedLight)->_l_light.enabled ? "Disable" : "Enable";
+            std::string label = p_context->llights.at(selectedLight)->_l_light.enabled ? "Disable" : "Enable";
             if (ImGui::MenuItem(label.c_str())) {
-                m_context->llights.at(selectedLight)->_l_light.enabled = !m_context->llights.at(selectedLight)->_l_light.enabled;
-                m_context->shaders->updateSingleLight(m_context, selectedLight);
+                p_context->llights.at(selectedLight)->_l_light.enabled = !p_context->llights.at(selectedLight)->_l_light.enabled;
+                p_context->shaders->updateSingleLight(p_context, selectedLight);
             }
             if (ImGui::MenuItem("Delete")) {
-                if (selectedLight >= 0 && selectedLight < m_context->llights.size()) {
+                if (selectedLight >= 0 && selectedLight < p_context->llights.size()) {
 
-                    int lastIndex = m_context->shaders->currLightsCount - 1;
+                    int lastIndex = p_context->shaders->currLightsCount - 1;
 
                     if (selectedLight != lastIndex) {
-                        std::swap(m_context->llights.at(selectedLight), m_context->llights.at(lastIndex));
+                        std::swap(p_context->llights.at(selectedLight), p_context->llights.at(lastIndex));
 
                         char uniformName[64];
                         sprintf(uniformName, "lights[%d].enabled", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.enabledLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
+                        p_context->llights.at(selectedLight)->_l_light.enabledLoc = GetShaderLocation(*p_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].type", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.typeLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
+                        p_context->llights.at(selectedLight)->_l_light.typeLoc = GetShaderLocation(*p_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].position", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.positionLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
+                        p_context->llights.at(selectedLight)->_l_light.positionLoc = GetShaderLocation(*p_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].target", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.targetLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
+                        p_context->llights.at(selectedLight)->_l_light.targetLoc = GetShaderLocation(*p_context->shaders->getShader(RENDER), uniformName);
 
                         sprintf(uniformName, "lights[%d].color", selectedLight);
-                        m_context->llights.at(selectedLight)->_l_light.colorLoc = GetShaderLocation(*m_context->shaders->getShader(RENDER), uniformName);
+                        p_context->llights.at(selectedLight)->_l_light.colorLoc = GetShaderLocation(*p_context->shaders->getShader(RENDER), uniformName);
 
-                        m_context->shaders->updateSingleLight(m_context, selectedLight);
+                        p_context->shaders->updateSingleLight(p_context, selectedLight);
                     }
 
-                    m_context->llights.at(lastIndex)->deleted = true;
-                    m_context->llights.at(lastIndex)->_l_light.enabled = false;
+                    p_context->llights.at(lastIndex)->deleted = true;
+                    p_context->llights.at(lastIndex)->_l_light.enabled = false;
 
-                    m_context->shaders->updateSingleLight(m_context, lastIndex);
+                    p_context->shaders->updateSingleLight(p_context, lastIndex);
 
                     selectedLight = -1;
-                    m_context->shaders->currLightsCount--;
+                    p_context->shaders->currLightsCount--;
 
-                    m_context->shaders->updateLights();
+                    p_context->shaders->updateLights();
                 }
             }
         }
@@ -856,22 +838,22 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         ImGui::SameLine();
         if (ImGui::Button("OK") || renameEnterPressed) {
             if (contextForEntity) {
-                if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
+                if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
                     if (renameBuffer[0] == '\0') {
                         showEmptyRenameWarning = true;
                     } else {
                         showEmptyRenameWarning = false;
-                        m_context->entities.at(selectedEntity)->e_name = std::string(renameBuffer);
+                        p_context->entities.at(p_context->selectedEntity)->e_name = std::string(renameBuffer);
                         ImGui::CloseCurrentPopup();
                     }
                 }
             } else {
-                if (selectedLight >= 0 && selectedLight < m_context->llights.size()) {
+                if (selectedLight >= 0 && selectedLight < p_context->llights.size()) {
                     if (renameBuffer[0] == '\0') {
                         showEmptyRenameWarning = true;
                     } else {
                         showEmptyRenameWarning = false;
-                        m_context->llights.at(selectedLight)->name = std::string(renameBuffer);
+                        p_context->llights.at(selectedLight)->name = std::string(renameBuffer);
                         ImGui::CloseCurrentPopup();
                     }
                 }
@@ -885,31 +867,31 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         ImGui::EndPopup();
     }
     // ENTITY SETTINGS
-    if (selectedEntity >= 0 && selectedEntity < m_context->entities.size()) {
-        m_context->uiManager->Section("Entity Settings", m_context->fontMgr.getXL());
+    if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
+        p_context->uiManager->Section("Entity Settings", p_context->fontMgr.getXL());
 
-        m_context->uiManager->Section("General", m_context->fontMgr.getLG(), 0);
+        p_context->uiManager->Section("General", p_context->fontMgr.getLG(), 0);
         ImGui::Dummy(ImVec2(0, 5));
 
         ImGui::Text("Entity Color");
-        ImGui::ColorEdit3("Mesh color", reinterpret_cast<float*>(&m_context->entities.at(selectedEntity)->e_colorValues));
-        m_context->entities.at(selectedEntity)->e_color = m_context->entities.at(selectedEntity)->ImVecToColor(m_context->entities.at(selectedEntity)->e_colorValues);
+        ImGui::ColorEdit3("Mesh color", reinterpret_cast<float*>(&p_context->entities.at(p_context->selectedEntity)->e_colorValues));
+        p_context->entities.at(p_context->selectedEntity)->e_color = p_context->entities.at(p_context->selectedEntity)->ImVecToColor(p_context->entities.at(p_context->selectedEntity)->e_colorValues);
 
         ImGui::Dummy(ImVec2(0, 2.5f));
         ImGui::Text("Entity Position");
         ImGui::Text("X");
         ImGui::SameLine();
-        positionChanged |= ImGui::InputFloat("##EntityPosXInput", &m_context->entities.at(selectedEntity)->e_position[0], 0.5f);
+        positionChanged |= ImGui::InputFloat("##EntityPosXInput", &p_context->entities.at(p_context->selectedEntity)->e_position[0], 0.5f);
         ImGui::Text("Y");
         ImGui::SameLine();
-        positionChanged |= ImGui::InputFloat("##EntityPosYInput", &m_context->entities.at(selectedEntity)->e_position[1], 0.5f);
+        positionChanged |= ImGui::InputFloat("##EntityPosYInput", &p_context->entities.at(p_context->selectedEntity)->e_position[1], 0.5f);
         ImGui::Text("Z");
         ImGui::SameLine();
-        positionChanged |= ImGui::InputFloat("##EntityPosZInput", &m_context->entities.at(selectedEntity)->e_position[2], 0.5f);
+        positionChanged |= ImGui::InputFloat("##EntityPosZInput", &p_context->entities.at(p_context->selectedEntity)->e_position[2], 0.5f);
 
         if (positionChanged) {
             positionChanged = false;
-            m_context->entities.at(selectedEntity)->e_boundingBox = m_context->entities.at(selectedEntity)->GenMeshBoundingBox(*m_context->entities.at(selectedEntity)->e_mesh, m_context->entities.at(selectedEntity)->e_position);
+            p_context->entities.at(p_context->selectedEntity)->e_boundingBox = p_context->entities.at(p_context->selectedEntity)->GenMeshBoundingBox(*p_context->entities.at(p_context->selectedEntity)->e_mesh, p_context->entities.at(p_context->selectedEntity)->e_position);
         }
 
         ImGui::Dummy(ImVec2(0, 2.5f));
@@ -919,17 +901,17 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
         ImGui::Checkbox("Show Wires", &showWires);
         ImGui::EndDisabled();
 
-        m_context->uiManager->Section("Shapers", m_context->fontMgr.getLG());
+        p_context->uiManager->Section("Shapers", p_context->fontMgr.getLG());
 
         ImGui::Text("Choose Shaper");
         ImGui::Combo("##ChooseShaper", &selectedShaper, shapers, IM_ARRAYSIZE(shapers));
 
         if (selectedShaper != 0) {
-            if (!checkIfHasShaper(typeid(SubdivisionShaper), m_context)) {
-                m_context->entities.at(selectedEntity)->e_shapers.push_back(new SubdivisionShaper(m_context->entities.at(selectedEntity).get(), m_context->entities.at(selectedEntity)->e_type != "terrain"));
+            if (!checkIfHasShaper(typeid(SubdivisionShaper), p_context)) {
+                p_context->entities.at(p_context->selectedEntity)->e_shapers.push_back(new SubdivisionShaper(p_context->entities.at(p_context->selectedEntity).get(), p_context->entities.at(p_context->selectedEntity)->e_type != "terrain"));
             }
 
-            Shaper* baseShaper = m_context->entities.at(selectedEntity)->e_shapers.at(0);
+            Shaper* baseShaper = p_context->entities.at(p_context->selectedEntity)->e_shapers.at(0);
             auto* _subdivisionShaper = dynamic_cast<SubdivisionShaper*>(baseShaper);
 
             std::string subLabel = "Subdivision level: " + std::to_string(_subdivisionShaper->subdivisions);
@@ -941,15 +923,15 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
             if (shouldDisableSubdivision) ImGui::BeginDisabled();
             if (ImGui::Button("Subdivide")) {
-                m_context->entities.at(selectedEntity)->e_shapers.at(0)->Apply(m_context->entities.at(selectedEntity));
-                m_context->entities.at(selectedEntity)->UpdateBuffers();
+                p_context->entities.at(p_context->selectedEntity)->e_shapers.at(0)->Apply(p_context->entities.at(p_context->selectedEntity));
+                p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
 
             }
             if (shouldDisableSubdivision) ImGui::EndDisabled();
         }
 
-        if (m_context->entities.at(selectedEntity)->e_type == "terrain") {
-            auto* terrain = dynamic_cast<TerrainEntity*>(m_context->entities.at(selectedEntity).get());
+        if (p_context->entities.at(p_context->selectedEntity)->e_type == "terrain") {
+            auto* terrain = dynamic_cast<TerrainEntity*>(p_context->entities.at(p_context->selectedEntity).get());
 
             noise.frequency = terrain->frequency;
             noise.amplitude = terrain->amplitude;
@@ -958,28 +940,32 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             noise.persistence = terrain->persistence;
 
             static bool makeFractal = false;
+            static bool update = false;
 
-            int vertexCount = static_cast<int>(m_context->entities.at(selectedEntity)->e_vertices.size() / 3);
-            for (int i = 0; i < vertexCount; i++) {
-                float x = m_context->entities.at(selectedEntity)->e_vertices[i * 3];
-                float z = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
+            if (update) {
+                update = false;
+                int vertexCount = static_cast<int>(p_context->entities.at(p_context->selectedEntity)->e_vertices.size() / 3);
+                for (int i = 0; i < vertexCount; i++) {
+                    float x = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3];
+                    float z = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 2];
 
-                if (terrain->noiseType == "simple") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getSimplePatternTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    if (terrain->noiseType == "simple") {
+                        p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1] = noise.getSimplePatternTerrain(x, z, p_context->entities.at(p_context->selectedEntity)->e_seedEnable);
 
-                } else if (terrain->noiseType == "octave") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getFractalNoiseTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable);
+                    } else if (terrain->noiseType == "octave") {
+                        p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1] = noise.getFractalNoiseTerrain(x, z, p_context->entities.at(p_context->selectedEntity)->e_seedEnable);
 
-                } else if (terrain->noiseType == "value") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getValueNoiseTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable, makeFractal);
+                    } else if (terrain->noiseType == "value") {
+                        p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1] = noise.getValueNoiseTerrain(x, z, p_context->entities.at(p_context->selectedEntity)->e_seedEnable, makeFractal);
 
-                } else if (terrain->noiseType == "perlin") {
-                    m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = noise.getPerlinNoiseTerrain(x, z, m_context->entities.at(selectedEntity)->e_seedEnable, makeFractal);
+                    } else if (terrain->noiseType == "perlin") {
+                        p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1] = noise.getPerlinNoiseTerrain(x, z, p_context->entities.at(p_context->selectedEntity)->e_seedEnable, makeFractal);
 
+                    }
                 }
             }
 
-            m_context->uiManager->Section("Noise", m_context->fontMgr.getLG());
+            p_context->uiManager->Section("Noise", p_context->fontMgr.getLG());
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Choose Noise Type");
@@ -999,11 +985,11 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
             }
 
-            shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Frequency", terrain->frequency, 0.01f, 1.0f);
-            m_context->uiManager->SetItemTooltip("Frequency controls how fast the waves change", startHoverFreq, hoverDelay);
+            shouldUpdateBuffers |= p_context->uiManager->FloatSlider("Frequency", terrain->frequency, 0.01f, 1.0f);
+            p_context->uiManager->SetItemTooltip("Frequency controls how fast the waves change", startHoverFreq, hoverDelay);
 
-            shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Amplitude", terrain->amplitude, 0.1f, 10.0f);
-            m_context->uiManager->SetItemTooltip("Amplitude controls how tall the bumps are", startHoverAmp);
+            shouldUpdateBuffers |= p_context->uiManager->FloatSlider("Amplitude", terrain->amplitude, 0.1f, 10.0f);
+            p_context->uiManager->SetItemTooltip("Amplitude controls how tall the bumps are", startHoverAmp);
 
             if (selectedNoiseType == 2 || selectedNoiseType == 3) {
                 ImGui::Dummy(ImVec2(0, 2.5f));
@@ -1012,14 +998,14 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
             if (selectedNoiseType == 1 || ((selectedNoiseType == 2 || selectedNoiseType == 3) && makeFractal)) {
 
-                shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Lacunarity", terrain->lacunarity, 0.01f, 10.0f);
-                m_context->uiManager->SetItemTooltip("Lacunarity increases frequency each octave", startHoverLac, hoverDelay);
+                shouldUpdateBuffers |= p_context->uiManager->FloatSlider("Lacunarity", terrain->lacunarity, 0.01f, 10.0f);
+                p_context->uiManager->SetItemTooltip("Lacunarity increases frequency each octave", startHoverLac, hoverDelay);
 
-                shouldUpdateBuffers |= m_context->uiManager->FloatSlider("Persistence", terrain->persistence, 0.01f, 1.0f);
-                m_context->uiManager->SetItemTooltip("Persistence reduces amplitude each octave", startHoverPer, hoverDelay);
+                shouldUpdateBuffers |= p_context->uiManager->FloatSlider("Persistence", terrain->persistence, 0.01f, 1.0f);
+                p_context->uiManager->SetItemTooltip("Persistence reduces amplitude each octave", startHoverPer, hoverDelay);
 
-                shouldUpdateBuffers |= m_context->uiManager->IntSlider("Octaves", terrain->octaves, 1, 12);
-                m_context->uiManager->SetItemTooltip("Octaves control how many laters of detail are", startHoverOct);
+                shouldUpdateBuffers |= p_context->uiManager->IntSlider("Octaves", terrain->octaves, 1, 12);
+                p_context->uiManager->SetItemTooltip("Octaves control how many laters of detail are", startHoverOct);
 
                 if (selectedNoiseType == 1) {
                     ImGui::Dummy(ImVec2(0, 2.5f));
@@ -1032,14 +1018,14 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
             }
             if (noise.enableTerracing) {
-                m_context->uiManager->FloatSlider("Terrace", noise.terraceSteps, 1.0f, 20.0f);
+                p_context->uiManager->FloatSlider("Terrace", noise.terraceSteps, 1.0f, 20.0f);
             }
-            int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
+            int& seedVal = p_context->entities.at(p_context->selectedEntity)->e_seed;
 
-            m_context->uiManager->Section("Seed", m_context->fontMgr.getLG());
+            p_context->uiManager->Section("Seed", p_context->fontMgr.getLG());
 
             ImGui::Dummy(ImVec2(0, 5));
-            ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities.at(selectedEntity)->e_seedEnable);
+            ImGui::Checkbox("Use Seed ##UseSeedChb", &p_context->entities.at(p_context->selectedEntity)->e_seedEnable);
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Seed Value");
@@ -1050,33 +1036,35 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             if (ImGui::Button("Generate New Seed")) {
-                m_context->entities.at(selectedEntity)->e_seed = noise.genNewSeedValue();
+                p_context->entities.at(p_context->selectedEntity)->e_seed = noise.genNewSeedValue();
             }
 
+            update = shouldUpdateBuffers;
+
             ImGui::PopItemWidth();
-        } else if (m_context->entities.at(selectedEntity)->e_type == "rock") {
-            auto* rock = dynamic_cast<RockEntity*>(m_context->entities.at(selectedEntity).get());
+        } else if (p_context->entities.at(p_context->selectedEntity)->e_type == "rock") {
+            auto* rock = dynamic_cast<RockEntity*>(p_context->entities.at(p_context->selectedEntity).get());
 
             noise.frequency = rock->frequency;
             noise.amplitude = rock->amplitude;
 
-            int vertexCount = (int)m_context->entities.at(selectedEntity)->e_vertices.size() / 3;
+            int vertexCount = static_cast<int>(p_context->entities.at(p_context->selectedEntity)->e_vertices.size() / 3);
             for (int i = 0; i < vertexCount; i++) {
-                float v0 = m_context->entities.at(selectedEntity)->e_vertices[i * 3];
-                float v1 = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1];
-                float v2 = m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2];
+                float v0 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3];
+                float v1 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1];
+                float v2 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 2];
 
                 glm::vec3 v(v0, v1, v2);
 
-                v = noise.getSimplePatternRock(v, m_context->entities.at(selectedEntity)->e_seedEnable);
+                v = noise.getSimplePatternRock(v, p_context->entities.at(p_context->selectedEntity)->e_seedEnable);
 
-                m_context->entities.at(selectedEntity)->e_vertices[i * 3] = v.x;
-                m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 1] = v.y;
-                m_context->entities.at(selectedEntity)->e_vertices[i * 3 + 2] = v.z;
+                p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3] = v.x;
+                p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1] = v.y;
+                p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 2] = v.z;
             }
 
             ImGui::Dummy(ImVec2(0, 5));
-            m_context->fontMgr.setLG();
+            p_context->fontMgr.setLG();
             ImGui::Text("Noise");
             ImGui::PopFont();
 
@@ -1087,14 +1075,14 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
             ImGui::Text("Amplitude");
             ImGui::SliderFloat("##RockAmplitude", &rock->amplitude, 0.10f, 1.0f);
 
-            m_context->entities.at(selectedEntity)->UpdateBuffers();
+            p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
 
-            int& seedVal = m_context->entities.at(selectedEntity)->e_seed;
+            int& seedVal = p_context->entities.at(p_context->selectedEntity)->e_seed;
 
-            m_context->uiManager->Section("Seed", m_context->fontMgr.getLG());
+            p_context->uiManager->Section("Seed", p_context->fontMgr.getLG());
 
             ImGui::Dummy(ImVec2(0, 5));
-            ImGui::Checkbox("Use Seed ##UseSeedChb", &m_context->entities.at(selectedEntity)->e_seedEnable);
+            ImGui::Checkbox("Use Seed ##UseSeedChb", &p_context->entities.at(p_context->selectedEntity)->e_seedEnable);
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Seed Value");
@@ -1105,7 +1093,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             if (ImGui::Button("Generate New Seed")) {
-                m_context->entities.at(selectedEntity)->e_seed = noise.genNewSeedValue();
+                p_context->entities.at(p_context->selectedEntity)->e_seed = noise.genNewSeedValue();
             }
 
             ImGui::PopItemWidth();
@@ -1113,7 +1101,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     }
     // SCENE SETTINGS
     ImGui::Dummy(ImVec2(0, 5));
-    m_context->fontMgr.setXL();
+    p_context->fontMgr.setXL();
     ImGui::Text("Scene settings");
     ImGui::PopFont();
 
@@ -1139,7 +1127,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     static bool updateWireframe = false;
 
     ImGui::Dummy(ImVec2(0, 5));
-    m_context->fontMgr.setLG();
+    p_context->fontMgr.setLG();
     ImGui::Text("Void Colors");
     ImGui::PopFont();
     ImGui::Dummy(ImVec2(0, 2.5f));
@@ -1152,13 +1140,14 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     ImGui::Text("Wireframe");
     updateWireframe = ImGui::ColorEdit3("##VoidColorWireframeEdit", reinterpret_cast<float *>(&voidColWir));
 
-    if (updateSolid) m_context->shaders->voidColSolid = ImVecToColor(voidColSol);
-    else if (updatePreview) m_context->shaders->voidColPreview = ImVecToColor(voidColMat);
-    else if (updateRender) m_context->shaders->voidColRender = ImVecToColor(voidColRen);
-    else if (updateWireframe) m_context->shaders->voidColWireframe = ImVecToColor(voidColWir);
+    if (updateSolid) p_context->shaders->voidColSolid = ImVecToColor(voidColSol);
+    else if (updatePreview) p_context->shaders->voidColPreview = ImVecToColor(voidColMat);
+    else if (updateRender) p_context->shaders->voidColRender = ImVecToColor(voidColRen);
+    else if (updateWireframe) p_context->shaders->voidColWireframe = ImVecToColor(voidColWir);
 
-    if (shouldUpdateBuffers && (selectedEntity >= 0 && selectedEntity < m_context->entities.size())) {
-        m_context->entities.at(selectedEntity)->UpdateBuffers();
+    if (shouldUpdateBuffers && (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size())) {
+        p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
+        shouldUpdateBuffers = false;
     }
 
     ImGui::End();
@@ -1170,8 +1159,8 @@ void SceneEditorState::draw(std::shared_ptr<Context>& m_context) {
     EndDrawing();
 }
 
-void SceneEditorState::clean(std::shared_ptr<Context>& m_context) {
-    for (auto& entityPtr : m_context->entities) {
+void SceneEditorState::clean(std::shared_ptr<Context>& p_context) {
+    for (auto& entityPtr : p_context->entities) {
         Entity& e = *entityPtr;
 
         for (auto& shaper : e.e_shapers) {
@@ -1216,8 +1205,8 @@ void SceneEditorState::HandleMouseSelection(const int& btn, int& selectedEntity,
     }
 }
 
-bool SceneEditorState::checkIfHasShaper(const std::type_info &type, std::shared_ptr<Context>& m_context) const {
-    for (const auto* shaper : m_context->entities.at(selectedEntity)->e_shapers) {
+bool SceneEditorState::checkIfHasShaper(const std::type_info &type, std::shared_ptr<Context>& p_context) const {
+    for (const auto* shaper : p_context->entities.at(p_context->selectedEntity)->e_shapers) {
         if (typeid(*shaper) == type) return true;
     }
     return false;
