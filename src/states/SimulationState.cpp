@@ -100,26 +100,49 @@ void SimulationState::draw(std::shared_ptr<Context>& p_context) {
     p_context->uiManager->Section("Simulation Settings", p_context->fontMgr.getXXL(), 0);
     ImGui::Dummy(ImVec2(0, 5));
 
-
     ImGui::Combo("##ChooseSimulation", &selectedSimulation, simulations, IM_ARRAYSIZE(simulations));
+
+    static bool showError = false;
     if (selectedSimulation == 0) {
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Please select simulation to view options here!");
         ImGui::Dummy(ImVec2(0, 5));
 
     } else if (selectedSimulation == 1) {
-        p_context->uiManager->Section("Thermal Erosion Settings");
+        if (p_context->entities.at(p_context->selectedEntity)->e_type == "terrain") {
+            static float startHoverTal = 0.0f;
+            static float startHoverStr = 0.0f;
+            static float startHoverIter = 0.0f;
+            static float startHoverNei = 0.0f;
 
-        p_context->uiManager->FloatSlider("Talus", thermalErosion.talus, 0.5f, 50.0f);
-        p_context->uiManager->FloatSlider("Strength", thermalErosion.strength, 0.1f, 10.0f);
-        p_context->uiManager->IntInput("Iterations", thermalErosion.iterations, false);
+            p_context->uiManager->Section("Thermal Erosion Settings");
 
-        ImGui::Dummy(ImVec2(0, 2.5f));
-        ImGui::Checkbox("Apply on 4 neighbors (false = 8 neighbors)", &thermalErosion.use4);
+            float highestY = findHighestYValue(p_context->entities.at(p_context->selectedEntity)->e_vertices);
 
-        if (ImGui::Button("Apply Erosion")) {
+            if (highestY == 0) {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Please change amplitude in order to do that");
+                showError = true;
+            }
 
-            thermalErosion.Apply(p_context->entities.at(p_context->selectedEntity)->e_vertices);
-            p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
+            p_context->uiManager->FloatSlider("Talus", thermalErosion.talus, 0.5f, highestY);
+            p_context->uiManager->SetItemTooltip("Erosion occurs when the height difference between a point and its neighbor exceeds this threshold (talus angle)", startHoverTal);
+
+            p_context->uiManager->FloatSlider("Strength", thermalErosion.strength, 0.1f, 10.0f);
+            p_context->uiManager->SetItemTooltip("Controls how much material is transferred during each erosion step (higher = stronger effect)", startHoverStr);
+
+            p_context->uiManager->IntInput("Iterations", thermalErosion.iterations, false);
+            p_context->uiManager->SetItemTooltip("Number of times the erosion simulation is run (recommended value 5)", startHoverIter);
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Checkbox("Apply on 4 neighbors (false = 8 neighbors)", &thermalErosion.use4);
+            p_context->uiManager->SetItemTooltip("If enabled erosion compares each point to 4 direct neighbors (N, S, E, W) and if disabled it will use 8 neighbors", startHoverNei);
+
+            if (ImGui::Button("Apply Erosion")) {
+
+                thermalErosion.Apply(p_context->entities.at(p_context->selectedEntity)->e_vertices);
+                p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
+            }
+        } else if (p_context->entities.at(p_context->selectedEntity)->e_type != "terrain" || showError) {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Available only for terrain entities");
         }
 
     } else if (selectedSimulation == 2) {
@@ -139,4 +162,12 @@ void SimulationState::draw(std::shared_ptr<Context>& p_context) {
 
 void SimulationState::clean(std::shared_ptr<Context>& p_context) {
 
+}
+
+float SimulationState::findHighestYValue(const std::vector<float>& vertices) {
+    float highest = -1;
+    for (int i = 0; i < vertices.size(); i += 3) {
+        highest = std::max(highest, vertices[i + 1]);
+    }
+    return highest;
 }
