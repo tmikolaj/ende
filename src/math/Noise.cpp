@@ -1,5 +1,7 @@
-#include <cstring>
 #include "Noise.hpp"
+
+#include <cstring>
+#include <stdexcept>
 
 #define TWO_PI (std::numbers::pi * 2.0f)
 
@@ -13,8 +15,20 @@ terraceSteps(1.0f) {
 
 void Noise::init(char _seedBuffer[25]) {
     if (_seedBuffer[0] != '\0') {
-        std::strncpy(seedBuffer, _seedBuffer, sizeof(seedBuffer));
-        gen.seed(std::stoi(seedBuffer));
+        std::strncpy(seedBuffer, _seedBuffer, sizeof(seedBuffer) - 1);
+        seedBuffer[sizeof(seedBuffer) - 1] = '\0';
+
+        try {
+            gen.seed(std::stoi(seedBuffer));
+        }
+        catch (const std::invalid_argument& e) {
+            gen.seed(rd());
+            seedValue = 0;
+        }
+        catch (const std::out_of_range& e) {
+            gen.seed(rd());
+            seedValue = 0;
+        }
     } else {
         gen.seed(rd());
         seedValue = 0;
