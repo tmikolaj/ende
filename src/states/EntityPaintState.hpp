@@ -20,18 +20,14 @@ private:
     bool validHit;
     Vector3 hitPos;
     Vector3 hitNormal;
-
-    // render/draw variables
-    int currentShader;
-    int selectedEntity;
 public:
     EntityPaintState() = default;
     ~EntityPaintState() override = default;
 
-    void init(std::shared_ptr<Context> &m_context) override;
-    void process(std::shared_ptr<Context> &m_context) override;
-    void draw(std::shared_ptr<Context> &m_context) override;
-    void clean(std::shared_ptr<Context> &m_context) override;
+    void init(std::shared_ptr<Context>& p_context) override;
+    void process(std::shared_ptr<Context>& p_context) override;
+    void draw(std::shared_ptr<Context>& p_context) override;
+    void clean(std::shared_ptr<Context>& p_context) override;
 
     Color ImVec4ToColor(ImVec4 p_color);
     bool CheckCollisionRayTriangle(const Ray& ray, Vector3 v0, Vector3 v1, Vector3 v2, Vector3* p_hitPos);
