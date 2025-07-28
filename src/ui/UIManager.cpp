@@ -55,6 +55,38 @@ bool UIManager::FloatSlider(const std::string& title, float& var, float slidermi
     return ret;
 }
 
+bool UIManager::IntInput(const std::string &title, int &var, bool includeSlider, int slidermin, int slidermax, float width, float inputWidth, bool setDummy) {
+    if (elementCalled) ImGui::Dummy(ImVec2(0, 2.5f));
+
+    bool ret = false;
+    if (inputWidth == 0.0f) {
+        inputWidth = width / 2.0f;
+    }
+    ImGui::PushItemWidth(width);
+    ImGui::Text(title.c_str());
+
+    if (includeSlider) {
+        std::string labelSlider = "##" + title + "Slider";
+        ret |= ImGui::SliderInt(labelSlider.c_str(), &var, slidermin, slidermax);
+        ImGui::SameLine();
+    }
+
+    std::string labelInput = "##" + title + "Input";
+    ImGui::PushItemWidth(inputWidth);
+    ret |= ImGui::InputInt(labelInput.c_str(), &var);
+    ImGui::PopItemWidth();
+
+    if (includeSlider) {
+        if (var < slidermin) slidermin = var;
+        if (var > slidermax) slidermax = var;
+    }
+    ImGui::PopItemWidth();
+
+    if (setDummy) elementCalled = true;
+
+    return ret;
+}
+
 bool UIManager::IntSlider(const std::string &title, int &var, int slidermin, int slidermax, float width, bool setDummy) {
     if (elementCalled) ImGui::Dummy(ImVec2(0, 2.5f));
 
