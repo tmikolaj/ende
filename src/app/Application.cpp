@@ -37,6 +37,7 @@ void Application::run() {
             if (w_state == EXIT) {
                 context->states->getCurrentState()->clean(context);
                 context->shaders->clean();
+                context->states->clean();
                 ImGui::DestroyContext();
                 exit(0);
             }
@@ -47,6 +48,7 @@ void Application::run() {
         if (WindowShouldClose()) {
             context->states->getCurrentState()->clean(context);
             context->shaders->clean();
+            context->states->clean();
             ImGui::DestroyContext();
             exit(0);
         }
