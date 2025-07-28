@@ -23,6 +23,8 @@ public:
     void process(std::shared_ptr<Context>& p_context) override;
     void draw(std::shared_ptr<Context>& p_context) override;
     void clean(std::shared_ptr<Context>& p_context) override;
+
+    static float findHighestYValue(const std::vector<float>& vertices);
 };
 
 #endif //SIMULATIONSTATE_HPP
