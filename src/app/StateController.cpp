@@ -13,7 +13,8 @@ m_remove(false),
 m_replace(false),
 windowStatus(0),
 latency(0),
-m_changePending(false) {
+m_changePending(false),
+m_stateIndex(STARTMENU) {
 
 }
 
@@ -68,10 +69,22 @@ void Engine::StateController::requestStateChange(int _stateIndex, bool replace, 
     m_changePending = true;
     latency = changeLatency;
 
-    if (_stateIndex == STARTMENU) newState = std::move(std::make_unique<StartMenuState>());
-    else if (_stateIndex == SCENE) newState = std::move(std::make_unique<SceneEditorState>());
-    else if (_stateIndex == ENTITYPAINT) newState = std::move(std::make_unique<EntityPaintState>());
-    else if (_stateIndex == SIMULATION) newState = std::move(std::make_unique<SimulationState>());
+    if (_stateIndex == STARTMENU) {
+        newState = std::move(std::make_unique<StartMenuState>());
+        m_stateIndex = STARTMENU;
+    }
+    else if (_stateIndex == SCENE) {
+        newState = std::move(std::make_unique<SceneEditorState>());
+        m_stateIndex = SCENE;
+    }
+    else if (_stateIndex == ENTITYPAINT) {
+        newState = std::move(std::make_unique<EntityPaintState>());
+        m_stateIndex = ENTITYPAINT;
+    }
+    else if (_stateIndex == SIMULATION) {
+        newState = std::move(std::make_unique<SimulationState>());
+        m_stateIndex = SIMULATION;
+    }
 
     m_replace = replace;
     m_add = true;
@@ -81,10 +94,26 @@ bool Engine::StateController::isChangePending() {
     return m_changePending;
 }
 
+int Engine::StateController::getstateIndex() const {
+    return m_stateIndex;
+}
+
 void Engine::StateController::setWindowState(int status) {
     windowStatus = status;
 }
 
 int Engine::StateController::getWindowState() {
     return windowStatus;
+}
+
+void Engine::StateController::clean() {
+    auto ctx = context.lock();
+
+    // First clean already called in Application.cpp
+    stateStack.pop();
+
+    while (!stateStack.empty()) {
+        stateStack.top()->clean(ctx);
+        stateStack.pop();
+    }
 }

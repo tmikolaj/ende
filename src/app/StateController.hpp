@@ -28,6 +28,8 @@ private:
     bool m_remove;
     bool m_changePending;
 
+    int m_stateIndex;
+
     int windowStatus;
     // Controls how many times all the state function will be executed before processState
     // which will either remove, add or do nothing
@@ -44,9 +46,12 @@ public:
     std::unique_ptr<BaseState>& getCurrentState();
     void requestStateChange(int stateIndex, bool replace = false, unsigned short changeLatency = 0);
     bool isChangePending();
+    int getstateIndex() const;
 
     void setWindowState(int status);
     int getWindowState();
+
+    void clean();
 };
 
 }
