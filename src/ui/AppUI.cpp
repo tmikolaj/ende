@@ -62,6 +62,10 @@ int AppUI::DrawMainMenuBar(std::shared_ptr<Context>& p_context, int& currentSh) 
 
 void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, int stateIndex) {
     float menuHeight = ImGui::GetFrameHeight();
+    static float startEntityPaintHover = 0.0f;
+    static float startSimulationHover = 0.0f;
+
+    bool shouldDisable = !(p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size());
 
     ImGui::SetNextWindowPos(ImVec2(0, menuHeight));
     ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - 400, menuHeight));
@@ -72,26 +76,48 @@ void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, in
         if (ImGui::BeginTabItem("Scene")) {
 
             if (stateIndex != SCENE && !p_context->states->isChangePending()) {
-                p_context->states->requestStateChange(SCENE, true);
+                p_context->states->popCurrent();
+                p_context->states->processState();
             }
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Entity Paint")) {
-
-            if (stateIndex != ENTITYPAINT && !p_context->states->isChangePending()) {
-                p_context->states->requestStateChange(ENTITYPAINT, false, 1);
-                currentSh = 1;
-            }
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Simulation")) {
-
-            if (stateIndex != SIMULATION && stateIndex != ENTITYPAINT && !p_context->states->isChangePending()) {
-                p_context->states->requestStateChange(SIMULATION, false);
-            }
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
     }
+    if (shouldDisable) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+    }
+
+    bool entityPaintClicked = ImGui::BeginTabItem("Entity Paint");
+
+    if (shouldDisable && ImGui::IsItemHovered()) {
+        p_context->uiManager->SetItemTooltip("You need to select an Entity first to enter this state!", startEntityPaintHover, 0.0f);
+    }
+
+    if (entityPaintClicked) {
+        if (!shouldDisable && stateIndex != ENTITYPAINT && !p_context->states->isChangePending()) {
+            p_context->states->requestStateChange(ENTITYPAINT, false, 1);
+            currentSh = 1;
+        }
+        ImGui::EndTabItem();
+    }
+
+    bool simulationClicked = ImGui::BeginTabItem("Simulation");
+
+    if (shouldDisable && ImGui::IsItemHovered()) {
+        p_context->uiManager->SetItemTooltip("You need to select an Entity first to enter this state!", startSimulationHover, 0.0f);
+    }
+
+    if (simulationClicked) {
+        if (!shouldDisable && stateIndex != SIMULATION && !p_context->states->isChangePending()) {
+            p_context->states->requestStateChange(SIMULATION, false);
+        }
+        ImGui::EndTabItem();
+    }
+
+    if (shouldDisable) {
+        ImGui::PopStyleColor();
+    }
+
+    ImGui::EndTabBar();
+
     ImGui::End();
 }
