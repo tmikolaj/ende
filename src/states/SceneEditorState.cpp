@@ -557,8 +557,6 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
                         p_context->entities.emplace_back(std::make_unique<TerrainEntity>(GenMeshPlane(width, length, resX, resZ), "terrain", "terrain"));
                         p_context->selectedEntity = static_cast<int>(p_context->entities.size() - 1);
                         p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
-                        _terrain->width = width;
-                        _terrain->height = length;
                         ImGui::CloseCurrentPopup();
                         entityToAdd = -1;
                         _terrain = dynamic_cast<TerrainEntity*>(p_context->entities.at(p_context->selectedEntity).get());
