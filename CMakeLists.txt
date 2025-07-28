@@ -11,6 +11,9 @@ set(IMGUI_SRC
         external/imgui/imgui_draw.cpp
         external/imgui/imgui_tables.cpp
         external/imgui/imgui_widgets.cpp
+        external/imgui/ImGuiFileDialog.cpp
+        external/imgui/ImGuiFileDialog.h
+        external/imgui/ImGuiFileDialogConfig.h
 )
 add_library(imgui STATIC ${IMGUI_SRC})
 target_include_directories(imgui PUBLIC external/imgui)
