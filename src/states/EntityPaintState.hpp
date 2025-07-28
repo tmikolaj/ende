@@ -20,6 +20,7 @@ private:
     bool validHit;
     Vector3 hitPos;
     Vector3 hitNormal;
+    bool lockDraw;
 public:
     EntityPaintState() = default;
     ~EntityPaintState() override = default;

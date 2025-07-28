@@ -1,4 +1,5 @@
 #include <rlImGui.h>
+#include "ImGuiFileDialog.h"
 
 #include "EntityPaintState.hpp"
 
@@ -17,6 +18,7 @@ void EntityPaintState::init(std::shared_ptr<Context>& p_context) {
     validHit = false;
     hitPos = { 0 };
     hitNormal = { 0 };
+    lockDraw = false;
 
     paintCanvas = LoadRenderTexture(textureSize, textureSize);
 
@@ -28,55 +30,54 @@ void EntityPaintState::init(std::shared_ptr<Context>& p_context) {
 }
 
 void EntityPaintState::process(std::shared_ptr<Context>& p_context) {
-    Ray ray = GetMouseRay(GetMousePosition(), *p_context->camera);
+    if (!lockDraw) {
+        Ray ray = GetMouseRay(GetMousePosition(), *p_context->camera);
 
-    bool didHit = false;
-    Vector2 hitUV;
-    validHit = false;
+        bool didHit = false;
+        Vector2 hitUV;
+        validHit = false;
 
-    for (int i = 0; i < p_context->entities.at(p_context->selectedEntity)->e_mesh->triangleCount; i++) {
-        int i0 = p_context->entities.at(p_context->selectedEntity)->e_mesh->indices[i * 3];
-        int i1 = p_context->entities.at(p_context->selectedEntity)->e_mesh->indices[i * 3 + 1];
-        int i2 = p_context->entities.at(p_context->selectedEntity)->e_mesh->indices[i * 3 + 2];
+        for (int i = 0; i < p_context->entities.at(p_context->selectedEntity)->e_mesh->triangleCount; i++) {
+            int i0 = p_context->entities.at(p_context->selectedEntity)->e_mesh->indices[i * 3];
+            int i1 = p_context->entities.at(p_context->selectedEntity)->e_mesh->indices[i * 3 + 1];
+            int i2 = p_context->entities.at(p_context->selectedEntity)->e_mesh->indices[i * 3 + 2];
 
-        Vector3 epos = { p_context->entities.at(p_context->selectedEntity)->e_position[0], p_context->entities.at(p_context->selectedEntity)->e_position[1], p_context->entities.at(p_context->selectedEntity)->e_position[2] };
+            Vector3 epos = { p_context->entities.at(p_context->selectedEntity)->e_position[0], p_context->entities.at(p_context->selectedEntity)->e_position[1], p_context->entities.at(p_context->selectedEntity)->e_position[2] };
 
-        Vector3 v0 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i0 * 3], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i0 * 3 + 1], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i0 * 3 + 2] };
-        Vector3 v1 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i1 * 3], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i1 * 3 + 1], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i1 * 3 + 2] };
-        Vector3 v2 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i2 * 3], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i2 * 3 + 1], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i2 * 3 + 2] };
+            Vector3 v0 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i0 * 3], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i0 * 3 + 1], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i0 * 3 + 2] };
+            Vector3 v1 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i1 * 3], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i1 * 3 + 1], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i1 * 3 + 2] };
+            Vector3 v2 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i2 * 3], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i2 * 3 + 1], p_context->entities.at(p_context->selectedEntity)->e_mesh->vertices[i2 * 3 + 2] };
 
-        v0 = Vector3Add(v0, epos);
-        v1 = Vector3Add(v1, epos);
-        v2 = Vector3Add(v2, epos);
+            v0 = Vector3Add(v0, epos);
+            v1 = Vector3Add(v1, epos);
+            v2 = Vector3Add(v2, epos);
 
-        Vector3 edge1 = v1 - v0;
-        Vector3 edge2 = v2 - v0;
+            Vector3 edge1 = v1 - v0;
+            Vector3 edge2 = v2 - v0;
 
-        if (CheckCollisionRayTriangle(ray, v0, v1, v2, &hitPos)) {
-            Vector2 uv0 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i0 * 2], p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i0 * 2 + 1] };
-            Vector2 uv1 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i1 * 2], p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i1 * 2 + 1] };
-            Vector2 uv2 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i2 * 2], p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i2 * 2 + 1] };
+            if (CheckCollisionRayTriangle(ray, v0, v1, v2, &hitPos)) {
+                Vector2 uv0 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i0 * 2], p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i0 * 2 + 1] };
+                Vector2 uv1 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i1 * 2], p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i1 * 2 + 1] };
+                Vector2 uv2 = { p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i2 * 2], p_context->entities.at(p_context->selectedEntity)->e_mesh->texcoords[i2 * 2 + 1] };
 
-            Vector3 bary = Vector3Barycenter(hitPos, v0, v1, v2);
-            hitUV = Vector2 { bary.x * uv0.x + bary.y * uv1.x + bary.z * uv2.x, bary.x * uv0.y + bary.y * uv1.y + bary.z * uv2.y};
-            hitNormal = Vector3Normalize(Vector3CrossProduct(edge1, edge2));
+                Vector3 bary = Vector3Barycenter(hitPos, v0, v1, v2);
+                hitUV = Vector2 { bary.x * uv0.x + bary.y * uv1.x + bary.z * uv2.x, bary.x * uv0.y + bary.y * uv1.y + bary.z * uv2.y};
+                hitNormal = Vector3Normalize(Vector3CrossProduct(edge1, edge2));
 
-            didHit = true;
-            validHit = true;
-            break;
+                didHit = true;
+                validHit = true;
+                break;
+            }
         }
-    }
 
-    if (validHit) HideCursor();
-    else ShowCursor();
+        if (didHit && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            int px = static_cast<int>(hitUV.x * textureWidth);
+            int py = static_cast<int>((1.0f - hitUV.y) * textureHeight);
 
-    if (didHit && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-        int px = static_cast<int>(hitUV.x * textureWidth);
-        int py = static_cast<int>((1.0f - hitUV.y) * textureHeight);
-
-        BeginTextureMode(paintCanvas);
-        DrawCircle(px, py, brushSize, ImVec4ToColor(paintColor));
-        EndTextureMode();
+            BeginTextureMode(paintCanvas);
+            DrawCircle(px, py, brushSize, ImVec4ToColor(paintColor));
+            EndTextureMode();
+        }
     }
 }
 
@@ -97,12 +98,6 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
     }
 
     rlImGuiBegin();
-
-    if (ImGui::GetIO().WantCaptureMouse) {
-        ShowCursor();
-    } else {
-        HideCursor();
-    }
 
     int code = p_context->ui->DrawMainMenuBar(p_context, p_context->currentSh);
     if (p_context->currentSh != 2) p_context->currentSh = 2;
@@ -137,18 +132,83 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
 
     ImGui::Begin("EntityPaintManager", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
 
-    p_context->uiManager->Section("Entity Paint Settings", p_context->fontMgr.getXXL(), 0);
-    ImGui::Dummy(ImVec2(0, 5));
+    static int selectedItem = 0;
+    const char* names[] = { "Painting", "Texture" };
 
-    p_context->uiManager->FloatInput("Brush Size", brushSize, true, 0.1f, 500.0f);
+    ImGui::BeginTabBar("EntityPaintManagerTabs");
+    for (int i = 0; i < IM_ARRAYSIZE(names); i++) {
+        if (ImGui::BeginTabItem(names[i])) {
+            selectedItem = i;
+            switch (i) {
+                case 0:
+                case 1:
+                case 2:
+                default: break;
+            }
+            ImGui::EndTabItem();
+        }
+    }
+    ImGui::EndTabBar();
 
-    ImGui::Dummy(ImVec2(0, 2.5f));
-    ImGui::Text("Brush Color");
-    ImGui::ColorEdit3("##BrushColor", reinterpret_cast<float*>(&paintColor));
+    if (selectedItem == 0) {
+        p_context->uiManager->Section("Entity Paint Settings", p_context->fontMgr.getXXL(), 0);
+        ImGui::Dummy(ImVec2(0, 5));
+
+        p_context->uiManager->FloatInput("Brush Size", brushSize, true, 0.1f, 500.0f);
+
+        ImGui::Dummy(ImVec2(0, 2.5f));
+        ImGui::Text("Brush Color");
+        ImGui::ColorEdit3("##BrushColor", reinterpret_cast<float*>(&paintColor));
+
+    } else if (selectedItem == 1) {
+        p_context->uiManager->Section("Texture Settings", p_context->fontMgr.getXXL(), 0);
+        ImGui::Dummy(ImVec2(0, 5));
+
+        if (ImGui::Button("Load Texture")) {
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseTex", "Select Texture", ".png,.jpg,.jpeg,.bmp,.tga,.gif,.qoi,.dds");
+        }
+
+        if (ImGuiFileDialog::Instance()->Display("ChooseTex")) {
+            if (ImGuiFileDialog::Instance()->IsOk()) {
+                std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+
+                Image image = LoadImage(path.c_str());
+                Texture2D texture = LoadTextureFromImage(image);
+
+                textureWidth = image.width;
+                textureHeight = image.height;
+
+                paintCanvas = LoadRenderTexture(textureWidth, textureHeight);
+
+                BeginTextureMode(paintCanvas);
+                ClearBackground(WHITE);
+                DrawTexture(texture, 0, 0, WHITE);
+                EndTextureMode();
+
+                p_context->entities.at(p_context->selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = paintCanvas.texture;
+
+                UnloadImage(image);
+                UnloadTexture(texture);
+            }
+            ImGuiFileDialog::Instance()->Close();
+        }
+
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::Checkbox("Lock Drawing", &lockDraw);
+    }
 
     ImGui::End();
 
     rlImGuiEnd();
+
+    bool mouseOverUI = ImGui::GetIO().WantCaptureMouse;
+    bool paintingEnabled = !lockDraw && validHit;
+
+    if (mouseOverUI || !paintingEnabled) {
+        ShowCursor();
+    } else {
+        HideCursor();
+    }
 
     EndDrawing();
 }
