@@ -20,6 +20,13 @@ void EntityPaintState::init(std::shared_ptr<Context>& p_context) {
     hitNormal = { 0 };
     lockDraw = false;
     textureTint = ImVec4(1, 1, 1, 1);
+    paintCanvas = &p_context->entities.at(p_context->selectedEntity)->e_canvas;
+
+    // random
+    toggleAngleJitter = false;
+    angle = 0.0f;
+    gen.seed(rd());
+    dist = std::uniform_int_distribution<int>(0, 360);
 
     Image stdBrushImg = LoadImage("../assets/icons/buttons/brushes/standard-brush.png");
     Image texBrushImg = LoadImage("../assets/icons/buttons/brushes/texture-brush.png");
@@ -29,14 +36,6 @@ void EntityPaintState::init(std::shared_ptr<Context>& p_context) {
 
     UnloadImage(stdBrushImg);
     UnloadImage(texBrushImg);
-
-    paintCanvas = LoadRenderTexture(textureSize, textureSize);
-
-    BeginTextureMode(paintCanvas);
-    ClearBackground(WHITE);
-    EndTextureMode();
-
-    p_context->entities.at(p_context->selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = paintCanvas.texture;
 }
 
 void EntityPaintState::process(std::shared_ptr<Context>& p_context) {
@@ -84,7 +83,7 @@ void EntityPaintState::process(std::shared_ptr<Context>& p_context) {
             int px = static_cast<int>(hitUV.x * textureWidth);
             int py = static_cast<int>((1.0f - hitUV.y) * textureHeight);
 
-            BeginTextureMode(paintCanvas);
+            BeginTextureMode(*paintCanvas);
 
             if (selectedBrush == 0) {
                 DrawCircle(px, py, brushSize, ImVec4ToColor(paintColor));
@@ -103,7 +102,11 @@ void EntityPaintState::process(std::shared_ptr<Context>& p_context) {
                     static_cast<unsigned char>(textureTint.w * 255)
                 };
 
-                DrawTexturePro(brushTexture, src, dst, origin, 0.0f, tint);
+                if (toggleAngleJitter) {
+                    angle = dist(gen);
+                }
+
+                DrawTexturePro(brushTexture, src, dst, origin, toggleAngleJitter || useAngle ? static_cast<float>(angle) : 0.0f, tint);
             }
             EndTextureMode();
         }
@@ -236,7 +239,17 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
                 ImGuiFileDialog::Instance()->Close();
             }
 
-            ImGui::ColorEdit3("##BrushColor", reinterpret_cast<float*>(&textureTint));
+            ImGui::ColorEdit3("##TexTint", reinterpret_cast<float*>(&textureTint));
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Checkbox("Use Angle", &useAngle);
+
+            if (!useAngle) ImGui::BeginDisabled();
+            p_context->uiManager->IntInput("Angle", angle, true, 0, 360);
+            if (!useAngle) ImGui::EndDisabled();
+
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Checkbox("Toggle Angle Jitter", &toggleAngleJitter);
 
         }
 
@@ -258,24 +271,23 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
                 textureWidth = image.width;
                 textureHeight = image.height;
 
-                paintCanvas = LoadRenderTexture(textureWidth, textureHeight);
+                *paintCanvas = LoadRenderTexture(textureWidth, textureHeight);
 
-                BeginTextureMode(paintCanvas);
+                BeginTextureMode(*paintCanvas);
                 ClearBackground(WHITE);
                 DrawTexture(texture, 0, 0, WHITE);
                 EndTextureMode();
 
-                p_context->entities.at(p_context->selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = paintCanvas.texture;
+                p_context->entities.at(p_context->selectedEntity)->e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = paintCanvas->texture;
 
                 UnloadImage(image);
                 UnloadTexture(texture);
             }
             ImGuiFileDialog::Instance()->Close();
         }
-
-        ImGui::Dummy(ImVec2(0, 5));
-        ImGui::Checkbox("Lock Drawing", &lockDraw);
     }
+    ImGui::Dummy(ImVec2(0, 5));
+    ImGui::Checkbox("Lock Drawing", &lockDraw);
 
     ImGui::End();
 
@@ -294,7 +306,7 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
 }
 
 void EntityPaintState::clean(std::shared_ptr<Context>& p_context) {
-    UnloadTexture(paintCanvas.texture);
+
     UnloadTexture(standardBrushTexture);
     UnloadTexture(textureBrushTexture);
 }

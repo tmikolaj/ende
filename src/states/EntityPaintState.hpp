@@ -2,6 +2,7 @@
 #define ENTITYPAINTSTATE_HPP
 
 #include <memory>
+#include <random>
 
 #include "imgui.h"
 #include "BaseState.hpp"
@@ -14,7 +15,7 @@ private:
     // brush related variables
     float brushSize;
     ImVec4 paintColor;
-    RenderTexture2D paintCanvas;
+    RenderTexture2D* paintCanvas;
     int textureWidth;
     int textureHeight;
     bool validHit;
@@ -26,6 +27,14 @@ private:
     ImVec4 textureTint;
     Texture2D standardBrushTexture;
     Texture2D textureBrushTexture;
+
+    // random
+    bool toggleAngleJitter;
+    bool useAngle;
+    int angle;
+    std::default_random_engine gen;
+    std::random_device rd;
+    std::uniform_int_distribution<int> dist;
 public:
     EntityPaintState() = default;
     ~EntityPaintState() override = default;
