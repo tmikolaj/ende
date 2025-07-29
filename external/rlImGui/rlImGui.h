@@ -184,7 +184,7 @@ RLIMGUIAPI void rlImGuiImageRenderTextureFit(const RenderTexture* image, bool ce
 /// <param name="name">The display name and ImGui ID for the button</param>
 /// <param name="image">The texture to draw</param>
 /// <returns>True if the button was clicked</returns>
-bool rlImGuiImageButton(const char* name, const Texture* image);
+bool rlImGuiImageButton(const char* name, const Texture* image, int size = -1);
 
 /// <summary>
 /// Draws a texture as an image button in an ImGui context. Uses the current ImGui cursor position and the specified size.
