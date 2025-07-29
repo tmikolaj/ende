@@ -19,6 +19,16 @@ void EntityPaintState::init(std::shared_ptr<Context>& p_context) {
     hitPos = { 0 };
     hitNormal = { 0 };
     lockDraw = false;
+    textureTint = ImVec4(1, 1, 1, 1);
+
+    Image stdBrushImg = LoadImage("../assets/icons/buttons/brushes/standard-brush.png");
+    Image texBrushImg = LoadImage("../assets/icons/buttons/brushes/texture-brush.png");
+
+    standardBrushTexture = LoadTextureFromImage(stdBrushImg);
+    textureBrushTexture = LoadTextureFromImage(texBrushImg);
+
+    UnloadImage(stdBrushImg);
+    UnloadImage(texBrushImg);
 
     paintCanvas = LoadRenderTexture(textureSize, textureSize);
 
@@ -75,7 +85,26 @@ void EntityPaintState::process(std::shared_ptr<Context>& p_context) {
             int py = static_cast<int>((1.0f - hitUV.y) * textureHeight);
 
             BeginTextureMode(paintCanvas);
-            DrawCircle(px, py, brushSize, ImVec4ToColor(paintColor));
+
+            if (selectedBrush == 0) {
+                DrawCircle(px, py, brushSize, ImVec4ToColor(paintColor));
+
+            } else if (selectedBrush == 1) {
+                Rectangle src = { 0, 0, static_cast<float>(brushTexture.width), static_cast<float>(brushTexture.height) };
+                Rectangle dst = { static_cast<float>(px), static_cast<float>(py), brushSize, brushSize };
+
+                // halved so the origin is centered at px, py
+                Vector2 origin = { brushSize / 2, brushSize / 2 };
+
+                Color tint = {
+                    static_cast<unsigned char>(textureTint.x * 255),
+                    static_cast<unsigned char>(textureTint.y * 255),
+                    static_cast<unsigned char>(textureTint.z * 255),
+                    static_cast<unsigned char>(textureTint.w * 255)
+                };
+
+                DrawTexturePro(brushTexture, src, dst, origin, 0.0f, tint);
+            }
             EndTextureMode();
         }
     }
@@ -156,9 +185,60 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
 
         p_context->uiManager->FloatInput("Brush Size", brushSize, true, 0.1f, 500.0f);
 
-        ImGui::Dummy(ImVec2(0, 2.5f));
-        ImGui::Text("Brush Color");
-        ImGui::ColorEdit3("##BrushColor", reinterpret_cast<float*>(&paintColor));
+        static bool popStyle = false;
+        if (selectedBrush == 0) {
+            ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(100, 200, 255, 255)); // Light blue
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(120, 220, 255, 255));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(80, 180, 255, 255));
+            popStyle = true;
+        }
+        if (rlImGuiImageButton("StandardBrush", &standardBrushTexture, 64)) {
+            selectedBrush = 0;
+        }
+        if (popStyle) {
+            ImGui::PopStyleColor(3);
+            popStyle = false;
+        }
+        ImGui::SameLine();
+        if (selectedBrush == 1) {
+            ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(100, 200, 255, 255)); // Light blue
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(120, 220, 255, 255));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(80, 180, 255, 255));
+            popStyle = true;
+        }
+        if (rlImGuiImageButton("TextureBrush", &textureBrushTexture, 64)) {
+            selectedBrush = 1;
+        }
+        if (popStyle) {
+            ImGui::PopStyleColor(3);
+            popStyle = false;
+        }
+
+        if (selectedBrush == 0) {
+            ImGui::Dummy(ImVec2(0, 2.5f));
+            ImGui::Text("Brush Color");
+            ImGui::ColorEdit3("##BrushColor", reinterpret_cast<float*>(&paintColor));
+
+        } else if (selectedBrush == 1) {
+            if (ImGui::Button("Change Brush Texture")) {
+                ImGuiFileDialog::Instance()->OpenDialog("ChangeBrushTex", "Select Texture", ".png,.jpg,.jpeg,.bmp,.tga,.gif,.qoi,.dds");
+            }
+
+            if (ImGuiFileDialog::Instance()->Display("ChangeBrushTex")) {
+                if (ImGuiFileDialog::Instance()->IsOk()) {
+                    std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+
+                    Image image = LoadImage(path.c_str());
+                    brushTexture = LoadTextureFromImage(image);
+
+                    UnloadImage(image);
+                }
+                ImGuiFileDialog::Instance()->Close();
+            }
+
+            ImGui::ColorEdit3("##BrushColor", reinterpret_cast<float*>(&textureTint));
+
+        }
 
     } else if (selectedItem == 1) {
         p_context->uiManager->Section("Texture Settings", p_context->fontMgr.getXXL(), 0);
@@ -214,7 +294,9 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
 }
 
 void EntityPaintState::clean(std::shared_ptr<Context>& p_context) {
-    ShowCursor();
+    UnloadTexture(paintCanvas.texture);
+    UnloadTexture(standardBrushTexture);
+    UnloadTexture(textureBrushTexture);
 }
 
 Color EntityPaintState::ImVec4ToColor(ImVec4 p_color) {

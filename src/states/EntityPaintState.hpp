@@ -21,6 +21,11 @@ private:
     Vector3 hitPos;
     Vector3 hitNormal;
     bool lockDraw;
+    Texture2D brushTexture;
+    int selectedBrush;
+    ImVec4 textureTint;
+    Texture2D standardBrushTexture;
+    Texture2D textureBrushTexture;
 public:
     EntityPaintState() = default;
     ~EntityPaintState() override = default;
