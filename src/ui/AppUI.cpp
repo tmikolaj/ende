@@ -65,7 +65,8 @@ void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, in
     static float startEntityPaintHover = 0.0f;
     static float startSimulationHover = 0.0f;
 
-    bool shouldDisable = !(p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size());
+    bool noEntityDisable = !(p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size());
+    bool sceneSelectionDisable = stateIndex != SCENE;
 
     ImGui::SetNextWindowPos(ImVec2(0, menuHeight));
     ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - 400, menuHeight));
@@ -82,18 +83,21 @@ void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, in
             ImGui::EndTabItem();
         }
     }
-    if (shouldDisable) {
+    if (noEntityDisable || sceneSelectionDisable) {
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
     }
 
     bool entityPaintClicked = ImGui::BeginTabItem("Entity Paint");
 
-    if (shouldDisable && ImGui::IsItemHovered()) {
+    if (noEntityDisable && ImGui::IsItemHovered()) {
         p_context->uiManager->SetItemTooltip("You need to select an Entity first to enter this state!", startEntityPaintHover, 0.0f);
+    }
+    if (sceneSelectionDisable && ImGui::IsItemHovered() && stateIndex != ENTITYPAINT) {
+        p_context->uiManager->SetItemTooltip("Please proceed to Scene then enter this state!", startEntityPaintHover, 0.0f);
     }
 
     if (entityPaintClicked) {
-        if (!shouldDisable && stateIndex != ENTITYPAINT && !p_context->states->isChangePending()) {
+        if ((!noEntityDisable && !sceneSelectionDisable) && stateIndex != ENTITYPAINT && !p_context->states->isChangePending()) {
             p_context->states->requestStateChange(ENTITYPAINT, false, 1);
             currentSh = 1;
         }
@@ -102,18 +106,21 @@ void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, in
 
     bool simulationClicked = ImGui::BeginTabItem("Simulation");
 
-    if (shouldDisable && ImGui::IsItemHovered()) {
+    if (noEntityDisable && ImGui::IsItemHovered()) {
         p_context->uiManager->SetItemTooltip("You need to select an Entity first to enter this state!", startSimulationHover, 0.0f);
+    }
+    if (sceneSelectionDisable && ImGui::IsItemHovered() && stateIndex != SIMULATION) {
+        p_context->uiManager->SetItemTooltip("Please proceed to Scene then enter this state!", startSimulationHover, 0.0f);
     }
 
     if (simulationClicked) {
-        if (!shouldDisable && stateIndex != SIMULATION && !p_context->states->isChangePending()) {
+        if ((!noEntityDisable && !sceneSelectionDisable) && stateIndex != SIMULATION && !p_context->states->isChangePending()) {
             p_context->states->requestStateChange(SIMULATION, false);
         }
         ImGui::EndTabItem();
     }
 
-    if (shouldDisable) {
+    if (noEntityDisable || sceneSelectionDisable) {
         ImGui::PopStyleColor();
     }
 
