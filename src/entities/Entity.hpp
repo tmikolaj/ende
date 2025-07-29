@@ -43,9 +43,18 @@ public:
   		e_color = ImVecToColor(e_colorValues);
 
   		e_visible = true;
+
+		e_canvas = LoadRenderTexture(512, 512);
+
+		BeginTextureMode(e_canvas);
+		ClearBackground(WHITE);
+		EndTextureMode();
+
+		e_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = e_canvas.texture;
+
   	}
     Entity(Mesh _mesh, const std::string& _name, const std::string& _type) : Entity(LoadModelFromMesh(_mesh), _name, _type) {
-
+		UnloadRenderTexture(e_canvas);
     }
 
     Entity(Entity&&) noexcept = default;
@@ -60,6 +69,8 @@ public:
 
 	ImVec4 e_colorValues;
 	Color e_color;
+
+	RenderTexture2D e_canvas;
 
 	bool e_visible;
 
@@ -81,7 +92,7 @@ public:
 	virtual BoundingBox GenMeshBoundingBox(const Mesh& mesh, float pos[3]) = 0;
 	virtual void UpdateBuffers() = 0;
 	virtual void RecalcNormals() = 0;
-	Color ImVecToColor(const ImVec4& toConvert) {
+	static Color ImVecToColor(const ImVec4& toConvert) {
 	    return (Color){
 	        static_cast<unsigned char>(toConvert.x * 255.0f),
 	        static_cast<unsigned char>(toConvert.y * 255.0f),
