@@ -83,6 +83,12 @@ target_link_libraries(3DProdGen
         rlImGui
 )
 
-if(UNIX)
+if (WIN32)
+    enable_language(RC)
+    set(WINDOWS_ICON_RC ${PROJECT_SOURCE_DIR}/assets/icons/endeicon.ico)
+    target_sources(3DProdGen PRIVATE ${WINDOWS_ICON_RC})
+endif()
+
+if (UNIX)
     target_link_libraries(3DProdGen m pthread dl X11 Xrandr Xi Xxf86vm Xinerama Xcursor GL)
 endif()
