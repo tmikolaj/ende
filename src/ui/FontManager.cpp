@@ -8,7 +8,7 @@ void Engine::FontManager::init() {
     lg = io.Fonts->AddFontFromFileTTF("../assets/fonts/Roboto-VariableFont_wdth,wght.ttf", 22.0f);
     xl = io.Fonts->AddFontFromFileTTF("../assets/fonts/Roboto-VariableFont_wdth,wght.ttf", 28.0f);
     xxl = io.Fonts->AddFontFromFileTTF("../assets/fonts/Roboto-VariableFont_wdth,wght.ttf", 32.0f);
-    title = io.Fonts->AddFontFromFileTTF("../assets/fonts/Roboto-VariableFont_wdth,wght.ttf", 48.0f);
+    title = io.Fonts->AddFontFromFileTTF("../assets/fonts/Audiowide-Regular.ttf", 64.0f);
     io.FontDefault = md;
 }
 
