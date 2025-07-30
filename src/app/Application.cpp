@@ -11,6 +11,12 @@ context(std::make_shared<Context>()) {
 void Application::init() {
     InitWindow(800, 600, "3DProcGen");
 
+    Image endelogo = LoadImage("../assets/icons/ende-logo-icon.png");
+    SetWindowIcon(endelogo);
+    UnloadImage(endelogo);
+
+    SetTargetFPS(144);
+
     context->states->setContext(context);
     context->states->setWindowState(NONE);
 
