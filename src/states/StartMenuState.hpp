@@ -18,6 +18,8 @@ private:
     char nameBuffer[25];
     bool showEmptyNameWarning;
 
+    Texture endelogo;
+
     char seedBuffer[25];
     Noise noise;
 public:

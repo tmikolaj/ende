@@ -20,6 +20,10 @@ void StartMenuState::init(std::shared_ptr<Context>& m_context) {
     int posY = (screenHeight - 600) / 2;
 
     SetWindowPosition(posX, posY);
+
+    Image logo = LoadImage("../assets/icons/ende-logo-icon.png");
+    endelogo = LoadTextureFromImage(logo);
+    UnloadImage(logo);
 }
 
 void StartMenuState::process(std::shared_ptr<Context>& m_context) {
@@ -37,11 +41,12 @@ void StartMenuState::draw(std::shared_ptr<Context>& m_context) {
     ImGui::SetNextWindowPos({0, 0});
 
     ImGui::Begin("Start Menu", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    rlImGuiImage(&endelogo, 100);
     ImGui::PushFont(ImGui::GetFont());
     m_context->fontMgr.setTITLE();
-    ImGui::SetCursorPosX(30.0f);
+    ImGui::SetCursorPosX(130.0f);
     ImGui::SetCursorPosY(20.0f);
-    ImGui::TextWrapped("3DProcGen - Start Menu");
+    ImGui::TextWrapped("ENDE");
     ImGui::Dummy({0, 20});
     ImGui::Separator();
 
@@ -164,5 +169,5 @@ void StartMenuState::draw(std::shared_ptr<Context>& m_context) {
 }
 
 void StartMenuState::clean(std::shared_ptr<Context>& m_context) {
-
+    UnloadTexture(endelogo);
 }
