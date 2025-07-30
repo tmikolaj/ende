@@ -545,7 +545,7 @@ void rlImGuiShutdown(void)
     GlobalContext = nullptr;
 }
 
-void rlImGuiImage(const Texture* image)
+void rlImGuiImage(const Texture* image, int size)
 {
     if (!image)
         return;
@@ -553,7 +553,7 @@ void rlImGuiImage(const Texture* image)
     if (GlobalContext)
         ImGui::SetCurrentContext(GlobalContext);
     
-    ImGui::Image(ImTextureID(image->id), ImVec2(float(image->width), float(image->height)));
+    ImGui::Image(ImTextureID(image->id), ImVec2(size == -1 ? float(image->width) : size, size == -1 ? float(image->height) : size));
 }
 
 bool rlImGuiImageButton(const char* name, const Texture* image, int size)
