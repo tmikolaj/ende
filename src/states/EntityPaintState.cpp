@@ -39,8 +39,10 @@ void EntityPaintState::init(std::shared_ptr<Context>& p_context) {
 }
 
 void EntityPaintState::process(std::shared_ptr<Context>& p_context) {
+    p_context->customCamera->update();
+
     if (!lockDraw) {
-        Ray ray = GetMouseRay(GetMousePosition(), *p_context->camera);
+        Ray ray = GetMouseRay(GetMousePosition(), *p_context->customCamera->getCamera());
 
         bool didHit = false;
         Vector2 hitUV;
@@ -117,7 +119,7 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
     BeginDrawing();
     p_context->shaders->handleBackgroundClearing(p_context->currentSh);
 
-    BeginMode3D(*p_context->camera);
+    BeginMode3D(*p_context->customCamera->getCamera());
 
     Vector3 epos = { p_context->entities.at(p_context->selectedEntity)->e_position[0], p_context->entities.at(p_context->selectedEntity)->e_position[1], p_context->entities.at(p_context->selectedEntity)->e_position[2] };
     DrawModel(p_context->entities.at(p_context->selectedEntity)->e_model, epos, 1.0f, p_context->entities.at(p_context->selectedEntity)->e_color);
@@ -125,8 +127,8 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
     EndMode3D();
 
     if (validHit) {
-        Vector2 screenPos = GetWorldToScreen(hitPos, *p_context->camera);
-        DrawCircleV(screenPos, brushSize * 3, Color{0, 255, 0, 100});
+        Vector2 screenPos = GetWorldToScreen(hitPos, *p_context->customCamera->getCamera());
+        DrawCircleV(screenPos, brushSize * 1.7, Color{0, 255, 0, 100});
     }
 
     rlImGuiBegin();
@@ -157,10 +159,11 @@ void EntityPaintState::draw(std::shared_ptr<Context>& p_context) {
     p_context->ui->DrawStateBar(p_context, p_context->currentSh, ENTITYPAINT);
 
     int mw = GetScreenWidth();
+    int mh = GetScreenHeight();
     float menuHeight = ImGui::GetFrameHeight();
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, menuHeight), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(400, 1080 - menuHeight), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(400, mh - menuHeight), ImGuiCond_Once);
 
     ImGui::Begin("EntityPaintManager", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
 
