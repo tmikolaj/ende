@@ -12,6 +12,8 @@ void SimulationState::init(std::shared_ptr<Context>& p_context) {
 }
 
 void SimulationState::process(std::shared_ptr<Context>& p_context) {
+    p_context->customCamera->update();
+
     p_context->shaders->handleShaderSelection(p_context->currentSh);
 
     if (p_context->currentSh == RENDER) p_context->shaders->updateCamPos(p_context);
@@ -43,7 +45,7 @@ void SimulationState::draw(std::shared_ptr<Context>& p_context) {
         }
     }
 
-    BeginMode3D(*p_context->camera);
+    BeginMode3D(*p_context->customCamera->getCamera());
 
     Color wirCol(static_cast<unsigned char>(wireframeColor.x), static_cast<unsigned char>(wireframeColor.y), static_cast<unsigned char>(wireframeColor.z), 255);
 
@@ -87,13 +89,14 @@ void SimulationState::draw(std::shared_ptr<Context>& p_context) {
     p_context->ui->DrawStateBar(p_context, p_context->currentSh, SIMULATION);
 
     int mw = GetScreenWidth();
+    int mh = GetScreenHeight();
     float menuHeight = ImGui::GetFrameHeight();
 
     static int selectedSimulation = 0;
     const char* simulations[] = { "", "Thermal Erosion", "Hydraulic Erosion" };
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, menuHeight), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(400, 1080 - menuHeight), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(400, mh - menuHeight), ImGuiCond_Once);
 
     ImGui::Begin("SimulationManager", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
 
