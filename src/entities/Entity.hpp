@@ -77,6 +77,7 @@ public:
 	std::vector<Shaper*> e_shapers;
 
 	bool e_seedEnable;
+	bool e_regenSeed;
 	int e_seed;
 
 	BoundingBox e_boundingBox;
