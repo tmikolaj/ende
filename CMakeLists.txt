@@ -75,6 +75,10 @@ add_executable(3DProdGen
 
         src/physics/ThermalErosion.cpp
         src/physics/ThermalErosion.hpp
+        src/ui/StyleManager.cpp
+        src/ui/StyleManager.hpp
+        src/core/CustomCamera.cpp
+        src/core/CustomCamera.hpp
 )
 
 target_link_libraries(3DProdGen

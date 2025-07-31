@@ -3,19 +3,20 @@
 #include "Application.hpp"
 
 #include "../states/StartMenuState.hpp"
+#include "../ui/StyleManager.hpp"
 
 Application::Application() :
 context(std::make_shared<Context>()) {
 
 }
 void Application::init() {
+    SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(800, 600, "3DProcGen");
+    SetExitKey(KEY_NULL);
 
     Image endelogo = LoadImage("../assets/icons/ende-logo-icon.png");
     SetWindowIcon(endelogo);
     UnloadImage(endelogo);
-
-    SetTargetFPS(144);
 
     context->states->setContext(context);
     context->states->setWindowState(NONE);
@@ -24,16 +25,14 @@ void Application::init() {
 
     context->fontMgr.init();
 
+    StyleManager::initEndeStyle(ENDE_PURPLE);
+
     context->states->add(std::make_unique<StartMenuState>());
     context->states->processState();
 
     context->shaders->init();
 
-    context->camera->position = { 5, 0, 5 };
-    context->camera->target = { 0, 0, 0 };
-    context->camera->up = { 0, 1, 0 };
-    context->camera->fovy = 45.0f;
-    context->camera->projection = CAMERA_PERSPECTIVE;
+    context->customCamera->init();
 }
 void Application::run() {
     int w_state = context->states->getWindowState();
