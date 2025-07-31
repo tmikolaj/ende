@@ -79,6 +79,7 @@ void AppUI::DrawStateBar(std::shared_ptr<Context>& p_context, int& currentSh, in
             if (stateIndex != SCENE && !p_context->states->isChangePending()) {
                 p_context->states->popCurrent();
                 p_context->states->processState();
+                if (stateIndex == ENTITYPAINT) currentSh = 1;
             }
             ImGui::EndTabItem();
         }
