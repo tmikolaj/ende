@@ -54,9 +54,6 @@ private:
     // scene controls
     float chunkSize;
     bool showGrid;
-    // camera
-    float zoomSpeed;
-    float distance;
     // void colors
     ImVec4 voidColSol;
     ImVec4 voidColMat;

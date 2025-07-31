@@ -20,9 +20,11 @@ openRenamePopup(false) {
 }
 
 void SceneEditorState::init(std::shared_ptr<Context>& p_context) {
-    SetWindowSize(1920, 1080);
+    SetWindowSize(GetMonitorWidth(GetCurrentMonitor()), GetMonitorHeight(GetCurrentMonitor()));
     SetWindowPosition(0, 0);
     p_context->states->setWindowState(NONE);
+
+    ToggleFullscreen();
 
     // lights init
     typeToAdd = -1;
@@ -38,10 +40,6 @@ void SceneEditorState::init(std::shared_ptr<Context>& p_context) {
     isGizmoDragged = false;
     isGizmoHovered = false;
     shader = p_context->shaders->getShader(SOLID);
-
-    // camera related variables init
-    zoomSpeed = 1.0f;
-    distance = 10.0f;
 
     // scene controls init
     chunkSize = 2.5f;
@@ -76,20 +74,12 @@ void SceneEditorState::init(std::shared_ptr<Context>& p_context) {
     hoverDelay = 1.0f;
 
     p_context->shaders->handleSetShaderValue(SOLID, p_context);
+    p_context->customCamera->init();
 }
 
 void SceneEditorState::process(std::shared_ptr<Context>& p_context) {
 
-    if (!ImGui::GetIO().WantCaptureMouse) {
-        distance -= GetMouseWheelMove() * zoomSpeed;
-
-        Vector3 camPos = {
-            0 + distance,
-            0 + distance,
-            0 + distance
-        };
-        p_context->camera->position = camPos;
-    }
+    p_context->customCamera->update();
 
     int btn;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -97,7 +87,7 @@ void SceneEditorState::process(std::shared_ptr<Context>& p_context) {
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         btn = MOUSE_BUTTON_RIGHT;
     }
-    if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, p_context->selectedEntity, shouldOpenContextPopup, *p_context->camera, p_context, ray);
+    if (!isGizmoDragged && !isGizmoHovered) HandleMouseSelection(btn, p_context->selectedEntity, shouldOpenContextPopup, *p_context->customCamera->getCamera(), p_context, ray);
 
     p_context->shaders->handleShaderSelection(p_context->currentSh);
 
@@ -159,7 +149,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
     if (colorChanged) p_context->shaders->changeColor();
     if (dirChanged) p_context->shaders->changeDirection();
 
-    BeginMode3D(*p_context->camera);
+    BeginMode3D(*p_context->customCamera->getCamera());
 
     // draw entities
     for (int i = 0; i < p_context->entities.size(); i++) {
@@ -195,7 +185,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
     BeginTextureMode(gizmoTexture);
     ClearBackground((Color){0, 0, 0, 0});
 
-    BeginMode3D(*p_context->camera);
+    BeginMode3D(*p_context->customCamera->getCamera());
     rlDisableDepthTest();
 
     if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
@@ -209,7 +199,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
     static glm::vec3 dragStartHitPoint;
 
     if (p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size()) {
-        float size = 0.05f * (distance /  5.0f);
+        float size = 0.05f * (p_context->customCamera->getDistance() /  5.0f);
 
         float lineLength = size * 8.0f;
 
@@ -244,7 +234,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
         DrawLine3D(rlEpos, Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), BLUE);
         DrawCube(Vector3Add(rlEpos, Vector3Scale(rlAxisZ, lineLength)), size, size, size, BLUE);
 
-        Ray gizmoRay = GetScreenToWorldRay(GetMousePosition(), *p_context->camera);
+        Ray gizmoRay = GetScreenToWorldRay(GetMousePosition(), *p_context->customCamera->getCamera());
         Vector2 mousePos = GetMousePosition();
 
         RayCollision hitX = GetRayCollisionBox(gizmoRay, boxX);
@@ -275,7 +265,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
         }
 
         if (isGizmoDragged && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-            Ray ray = GetScreenToWorldRay(GetMousePosition(), *p_context->camera);
+            Ray ray = GetScreenToWorldRay(GetMousePosition(), *p_context->customCamera->getCamera());
             glm::vec3 rayOrigin = glm::vec3(ray.position.x, ray.position.y, ray.position.z);
             glm::vec3 rayDirection = glm::normalize(glm::vec3(ray.direction.x, ray.direction.y, ray.direction.z));
 
@@ -403,13 +393,27 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
         ImGui::BeginChild("SettingsContent", ImVec2(400, 300), true);
 
         switch (selectedCategory) {
-            case 0:
+            case 0: {
                 ImGui::Checkbox("Strict Search", &useStrictSearch);
                 break;
-            case 1:
-                p_context->uiManager->FloatInput("Zoom Speed", zoomSpeed, true, 1.0f, 50.0f);
+            }
+            case 1: {
+                static float newZoom = 2.0f;
+                static float newPan = 0.001f;
+                static float newRot = 0.002f;
+
+                bool changedZ = p_context->uiManager->FloatInput("Zoom Speed", newZoom, true, 1.0f, 50.0f);
+                if (changedZ) p_context->customCamera->changeZoomSpeed(newZoom);
+
+                bool changedP = p_context->uiManager->FloatInput("Pan Speed", newPan, true, 0.0001f, 0.01f);
+                if (changedP) p_context->customCamera->changePanSpeed(newPan);
+
+                bool changedR = p_context->uiManager->FloatInput("Rotation Speed", newRot, true, 0.001f, 0.01f);
+                if (changedR) p_context->customCamera->changeRotateSpeed(newRot);
+
                 break;
-            case 2:
+            }
+            case 2: {
                 ImGui::Text("Solid Shader");
                 colorChanged = ImGui::ColorEdit3("##SolidLightColor", p_context->shaders->lightColor);
                 ImGui::Dummy(ImVec2(0, 2.5f));
@@ -417,7 +421,8 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
                 dirChanged = ImGui::SliderFloat3("##SolidLightDirection", p_context->shaders->lightDirection, -1.0f, 1.0f);
 
                 break;
-            case 3:
+            }
+            case 3: {
                 ImGui::Checkbox("Show Vertex Normals", &showVertexNormals);
                 ImGui::Checkbox("Show Face Normals", &showFaceNormals);
                 ImGui::Checkbox("Show Edge Normals", &showEdgeNormals);
@@ -426,12 +431,15 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
                 if (!(showEdgeNormals || showFaceNormals || showVertexNormals)) ImGui::EndDisabled();
                 ImGui::Checkbox("Check UV (selected entity)", &showUV);
                 break;
-            case 4:
+            }
+            case 4: {
                 ImGui::ColorEdit3("Selection Mesh", reinterpret_cast<float*>(&onSelectionMeshColor));
                 ImGui::ColorEdit3("Selection Wires", reinterpret_cast<float*>(&onSelectionWiresColor));
                 break;
-            default:
+            }
+            default: {
                 break;
+            }
         }
 
         ImGui::EndChild();
@@ -622,7 +630,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
     float menuHeight = ImGui::GetFrameHeight();
 
     ImGui::SetNextWindowPos(ImVec2(mw - 400, menuHeight), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(400, 1080 - menuHeight), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(400, mh - menuHeight), ImGuiCond_Once);
 
     ImGui::Begin("Scene Manager", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
 
@@ -938,10 +946,9 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
             noise.persistence = terrain->persistence;
 
             static bool makeFractal = false;
-            static bool update = false;
 
-            if (update) {
-                update = false;
+            if (p_context->entities.at(p_context->selectedEntity)->e_regenSeed) {
+                p_context->entities.at(p_context->selectedEntity)->e_regenSeed = false;
                 int vertexCount = static_cast<int>(p_context->entities.at(p_context->selectedEntity)->e_vertices.size() / 3);
                 for (int i = 0; i < vertexCount; i++) {
                     float x = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3];
@@ -1035,9 +1042,13 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
             ImGui::Dummy(ImVec2(0, 2.5f));
             if (ImGui::Button("Generate New Seed")) {
                 p_context->entities.at(p_context->selectedEntity)->e_seed = noise.genNewSeedValue();
+                p_context->entities.at(p_context->selectedEntity)->e_regenSeed = true;
+                shouldUpdateBuffers = true;
             }
 
-            update = shouldUpdateBuffers;
+            if (shouldUpdateBuffers) {
+                p_context->entities.at(p_context->selectedEntity)->e_regenSeed = true;
+            }
 
             ImGui::PopItemWidth();
         } else if (p_context->entities.at(p_context->selectedEntity)->e_type == "rock") {
@@ -1046,19 +1057,21 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
             noise.frequency = rock->frequency;
             noise.amplitude = rock->amplitude;
 
-            int vertexCount = static_cast<int>(p_context->entities.at(p_context->selectedEntity)->e_vertices.size() / 3);
-            for (int i = 0; i < vertexCount; i++) {
-                float v0 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3];
-                float v1 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1];
-                float v2 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 2];
+            if (p_context->entities.at(p_context->selectedEntity)->e_regenSeed) {
+                int vertexCount = static_cast<int>(p_context->entities.at(p_context->selectedEntity)->e_vertices.size() / 3);
+                for (int i = 0; i < vertexCount; i++) {
+                    float v0 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3];
+                    float v1 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1];
+                    float v2 = p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 2];
 
-                glm::vec3 v(v0, v1, v2);
+                    glm::vec3 v(v0, v1, v2);
 
-                v = noise.getSimplePatternRock(v, p_context->entities.at(p_context->selectedEntity)->e_seedEnable);
+                    v = noise.getSimplePatternRock(v, p_context->entities.at(p_context->selectedEntity)->e_seedEnable);
 
-                p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3] = v.x;
-                p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1] = v.y;
-                p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 2] = v.z;
+                    p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3] = v.x;
+                    p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 1] = v.y;
+                    p_context->entities.at(p_context->selectedEntity)->e_vertices[i * 3 + 2] = v.z;
+                }
             }
 
             ImGui::Dummy(ImVec2(0, 5));
@@ -1068,10 +1081,10 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
 
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Frequency");
-            ImGui::SliderFloat("##RockFrequency", &rock->frequency, 0.01f, 1.0f);
+            shouldUpdateBuffers |= ImGui::SliderFloat("##RockFrequency", &rock->frequency, 0.01f, 1.0f);
             ImGui::Dummy(ImVec2(0, 2.5f));
             ImGui::Text("Amplitude");
-            ImGui::SliderFloat("##RockAmplitude", &rock->amplitude, 0.10f, 1.0f);
+            shouldUpdateBuffers |= ImGui::SliderFloat("##RockAmplitude", &rock->amplitude, 0.10f, 1.0f);
 
             p_context->entities.at(p_context->selectedEntity)->UpdateBuffers();
 
@@ -1092,6 +1105,11 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
             ImGui::Dummy(ImVec2(0, 2.5f));
             if (ImGui::Button("Generate New Seed")) {
                 p_context->entities.at(p_context->selectedEntity)->e_seed = noise.genNewSeedValue();
+                p_context->entities.at(p_context->selectedEntity)->e_regenSeed = true;
+            }
+
+            if (shouldUpdateBuffers) {
+                p_context->entities.at(p_context->selectedEntity)->e_regenSeed = true;
             }
 
             ImGui::PopItemWidth();
