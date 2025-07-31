@@ -57,7 +57,8 @@ void Engine::ShaderManager::handleSetShaderValue(int shaderIndex, std::shared_pt
         SetShaderValue(solidShader, uLightDirLoc, &lightDir[0], SHADER_UNIFORM_VEC3);
     } else if (shaderIndex == RENDER) {
 
-        float cameraPos[3] = { p_context->camera->position.x, p_context->camera->position.y, p_context->camera->position.z };
+        Vector3 pos = p_context->customCamera->getCamera()->position;
+        float cameraPos[3] = { pos.x, pos.y, pos.z };
         SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
         SetShaderValue(renderShader, GetShaderLocation(renderShader, "numLights"), &currLightsCount, SHADER_UNIFORM_INT);
         SetShaderValue(renderShader, ambientLoc, ambientColor, SHADER_UNIFORM_VEC4);
@@ -94,7 +95,7 @@ void Engine::ShaderManager::changeDirection() {
 }
 
 void Engine::ShaderManager::updateCamPos(std::shared_ptr<Context>& p_context) const {
-    Vector3 cameraPos = p_context->camera->position;
+    Vector3 cameraPos = p_context->customCamera->getCamera()->position;
     SetShaderValue(renderShader, renderShader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
 }
 

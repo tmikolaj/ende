@@ -12,6 +12,8 @@
 
 #include "../entities/Entity.hpp"
 
+#include "CustomCamera.hpp"
+
 enum WindowState {
     NONE = 0,
     RESTART = 1,
@@ -25,7 +27,7 @@ struct Context {
     std::vector<std::unique_ptr<lLight>> llights;
     Engine::FontManager fontMgr;
     std::unique_ptr<AppUI> ui;
-    std::unique_ptr<Camera3D> camera;
+    std::unique_ptr<CustomCamera> customCamera;
     std::unique_ptr<UIManager> uiManager;
     std::unique_ptr<Engine::ShaderManager> shaders;
     int selectedEntity;
@@ -34,7 +36,7 @@ struct Context {
     Context() :
     states(std::make_unique<Engine::StateController>()),
     ui(std::make_unique<AppUI>()),
-    camera(std::make_unique<Camera3D>()),
+    customCamera(std::make_unique<CustomCamera>()),
     uiManager(std::make_unique<UIManager>()),
     shaders(std::make_unique<Engine::ShaderManager>()),
     selectedEntity(-1),
