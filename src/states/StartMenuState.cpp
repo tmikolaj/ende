@@ -17,6 +17,10 @@ void StartMenuState::init(std::shared_ptr<Context>& m_context) {
     // TODO: Will later load some information
     SetWindowSize(800, 600);
 
+    if (IsWindowFullscreen()) {
+        ToggleFullscreen();
+    }
+
     int monitor = GetCurrentMonitor();
     int screenWidth = GetMonitorWidth(monitor);
     int screenHeight = GetMonitorHeight(monitor);
