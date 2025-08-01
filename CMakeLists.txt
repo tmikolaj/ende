@@ -79,6 +79,9 @@ add_executable(3DProdGen
         src/ui/StyleManager.hpp
         src/core/CustomCamera.cpp
         src/core/CustomCamera.hpp
+
+        src/Exporter.cpp
+        src/Exporter.hpp
 )
 
 target_link_libraries(3DProdGen
