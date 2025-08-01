@@ -5,6 +5,7 @@
 #include "rlights.h"
 
 #include "external/rlImGui/rlImGui.h"
+#include "ImGuiFileDialog.h"
 
 #include "external/glm/glm.hpp"
 
@@ -357,6 +358,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
         else if (code == ADD_ROCK) entityToAdd = ROCK;
         else if (code == ADD_POINT) typeToAdd = LIGHT_POINT;
         else if (code == ADD_DIRECTIONAL) typeToAdd = LIGHT_DIRECTIONAL;
+        else if (code == OPEN_EXPORTER) ImGui::OpenPopup("Exporter");
     }
 
     // ---------
@@ -445,6 +447,69 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
         ImGui::EndChild();
 
         ImGui::EndPopup();
+    }
+
+    // -------------
+    //   EXPORTER
+    // -------------
+    if (ImGui::BeginPopupModal("Exporter", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (!(p_context->selectedEntity >= 0 && p_context->selectedEntity < p_context->entities.size())) {
+            p_context->fontMgr.setXL();
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Warning!");
+            ImGui::PopFont();
+
+            ImGui::SameLine();
+            ImGui::Dummy(ImVec2(50, 0));
+            ImGui::SameLine();
+            if (ImGui::Button("X")) {
+                ImGui::CloseCurrentPopup();
+            }
+
+            p_context->uiManager->Section("Please select an entity first to export it!");
+
+            ImGui::EndPopup();
+
+        } else {
+            static std::string path = "";
+            static char buffer[30] = "";
+
+            p_context->fontMgr.setXL();
+            ImGui::Text("Entity Exporter");
+            ImGui::PopFont();
+
+            ImGui::SameLine();
+            ImGui::Dummy(ImVec2(80, 0));
+            ImGui::SameLine();
+            if (ImGui::Button("X")) {
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::Dummy(ImVec2(0, 5));
+
+            if (ImGui::Button("Select Save Location")) {
+                ImGuiFileDialog::Instance()->OpenDialog("ChooseDirDlgKey", "Choose Directory", nullptr);
+            }
+
+            if (ImGuiFileDialog::Instance()->Display("ChooseDirDlgKey")) {
+                if (ImGuiFileDialog::Instance()->IsOk()) {
+
+                    path = ImGuiFileDialog::Instance()->GetCurrentPath();
+                }
+                ImGuiFileDialog::Instance()->Close();
+            }
+
+            if (path.empty() && buffer[0] == '\0') ImGui::BeginDisabled();
+            ImGui::Text("Name");
+            ImGui::InputText("##Name", buffer, IM_ARRAYSIZE(buffer));
+
+            if (ImGui::Button("Export")) {
+                exporter.ExportOBJ(p_context->entities.at(p_context->selectedEntity), path + '/' + buffer + ".obj");
+                ImGui::CloseCurrentPopup();
+            }
+            if (path.empty() && buffer[0] == '\0') ImGui::EndDisabled();
+
+            ImGui::EndPopup();
+        }
     }
 
     // -----------

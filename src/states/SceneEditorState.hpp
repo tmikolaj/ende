@@ -15,6 +15,8 @@
 #include "../debug/NormalVisualizer.hpp"
 #include "../debug/UVChecker.hpp"
 
+#include "../Exporter.hpp"
+
 enum entity {
     TERRAIN = 0,
     ROCK = 1,
@@ -42,6 +44,7 @@ private:
     CustomMeshFactory customMeshes;
     NormalVisualizer normalController;
     UVChecker uvController;
+    Engine::Exporter exporter;
 
     bool shouldOpenContextPopup;
     bool contextForEntity;
