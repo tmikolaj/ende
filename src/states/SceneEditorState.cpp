@@ -1088,7 +1088,7 @@ void SceneEditorState::draw(std::shared_ptr<Context>& p_context) {
 
             }
             if (noise.enableTerracing) {
-                p_context->uiManager->FloatSlider("Terrace", noise.terraceSteps, 1.0f, 20.0f);
+                shouldUpdateBuffers |= p_context->uiManager->FloatSlider("Terrace", noise.terraceSteps, 1.0f, 20.0f);
             }
             int& seedVal = p_context->entities.at(p_context->selectedEntity)->e_seed;
 
