@@ -1,4 +1,6 @@
 #include <memory>
+#include <fstream>
+#include <iostream>
 
 #include "Application.hpp"
 
@@ -25,7 +27,24 @@ void Application::init() {
 
     context->fontMgr.init();
 
-    StyleManager::initEndeStyle(ENDE_PURPLE);
+    std::ifstream file("../endeconfig");
+    int styleIndex;
+    std::string line;
+    if (!file) {
+        std::cerr << "Application::init: Failed to open endeconfig file" << '\n';
+        styleIndex = ENDE_PURPLE;
+
+    } else {
+        if (std::getline(file, line)) {
+            try {
+                styleIndex = std::stoi(line);
+            } catch (std::invalid_argument& e) {
+                styleIndex = ENDE_PURPLE;
+            }
+        }
+    }
+
+    StyleManager::initEndeStyle(styleIndex);
 
     context->states->add(std::make_unique<StartMenuState>());
     context->states->processState();
