@@ -32,6 +32,8 @@ add_executable(3DProdGen
         src/app/main.cpp
 
         src/core/Context.hpp
+        src/core/CustomCamera.cpp
+        src/core/CustomCamera.hpp
 
         src/debug/NormalVisualizer.cpp
         src/debug/NormalVisualizer.hpp
@@ -77,8 +79,6 @@ add_executable(3DProdGen
         src/physics/ThermalErosion.hpp
         src/ui/StyleManager.cpp
         src/ui/StyleManager.hpp
-        src/core/CustomCamera.cpp
-        src/core/CustomCamera.hpp
 
         src/Exporter.cpp
         src/Exporter.hpp
