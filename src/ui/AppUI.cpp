@@ -9,9 +9,9 @@ int AppUI::DrawMainMenuBar(std::shared_ptr<Context>& p_context, int& currentSh) 
 
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Close Project")) {
-                p_context->states->requestStateChange(STARTMENU);
-            }
+            if (ImGui::MenuItem("Close Project")) p_context->states->requestStateChange(STARTMENU);
+
+            if (ImGui::MenuItem("Export Mesh")) code = OPEN_EXPORTER;
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit")) {

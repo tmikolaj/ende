@@ -11,7 +11,8 @@ enum DrawMainMenuBarCodes {
     ADD_ROCK = 2,
     ADD_DIRECTIONAL = 3,
     ADD_POINT = 4,
-    OPEN_SETTINGS = 5
+    OPEN_SETTINGS = 5,
+    OPEN_EXPORTER = 6
 };
 
 class AppUI {
