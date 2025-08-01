@@ -73,12 +73,19 @@ void SubdivisionShaper::Apply(std::unique_ptr<Entity>& e) {
         if (z > maxZ) maxZ = z;
     }
 
-    for (int i = 0; i < newVertices.size(); i++) {
+    int vertCount = static_cast<int>(newVertices.size() / 3);
+    newTexcoords.clear();
+    newTexcoords.reserve(vertCount * 2);
+
+    float dx = (maxX > minX) ? (maxX - minX) : 1.0f;
+    float dz = (maxZ > minZ) ? (maxZ - minZ) : 1.0f;
+
+    for (int i = 0; i < vertCount; i++) {
         float x = newVertices[i * 3];
         float z = newVertices[i * 3 + 2];
 
-        float u = (x - minX) / (maxX - minX);
-        float v = (z - minZ) / (maxZ - minZ);
+        float u = (x - minX) / dx;
+        float v = (z - minZ) / dz;
 
         newTexcoords.push_back(u);
         newTexcoords.push_back(v);
@@ -110,6 +117,7 @@ void SubdivisionShaper::Apply(std::unique_ptr<Entity>& e) {
 
     e->e_vertices = std::move(newVertices);
     e->e_indices = std::move(newIndices);
+    e->e_texcoords = std::move(newTexcoords);
     e->e_mesh = new Mesh(newMesh);
 
     e->e_model = LoadModelFromMesh(newMesh);
