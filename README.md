@@ -29,6 +29,11 @@
 2. Unzip
 3. Go to endeapp directory
 4. Double-click the binary/executable
+ ```bash
+   tar xzf ende-v0.1-alpha-linux-x86_64.tar.gz
+   cd linux/endeapp
+   ./ende
+   ```
 
 > ⚠️ **Important:** Do not move the binary/executable after unizipping
 > as it will break the path!
