@@ -13,7 +13,7 @@ context(std::make_shared<Context>()) {
 }
 void Application::init() {
     SetConfigFlags(FLAG_VSYNC_HINT);
-    InitWindow(800, 600, "3DProcGen");
+    InitWindow(800, 600, "Ende");
     SetExitKey(KEY_NULL);
 
     Image endelogo = LoadImage("../assets/icons/ende-logo-icon.png");
