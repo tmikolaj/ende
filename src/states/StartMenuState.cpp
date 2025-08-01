@@ -1,6 +1,11 @@
 #include "StartMenuState.hpp"
 #include "SceneEditorState.hpp"
 
+#include <fstream>
+#include <iostream>
+
+#include "../ui/StyleManager.hpp"
+
 StartMenuState::StartMenuState() :
 nameBuffer{""},
 showEmptyNameWarning(false),
@@ -24,6 +29,21 @@ void StartMenuState::init(std::shared_ptr<Context>& m_context) {
     Image logo = LoadImage("../assets/icons/ende-logo-icon.png");
     endelogo = LoadTextureFromImage(logo);
     UnloadImage(logo);
+
+    Image i1 = LoadImage("../assets/icons/buttons/styles/ende-purple.png");
+    Image i2 = LoadImage("../assets/icons/buttons/styles/ende-blue.png");
+    Image i3 = LoadImage("../assets/icons/buttons/styles/ende-monochrome.png");
+    Image i4 = LoadImage("../assets/icons/buttons/styles/ende-warm.png");
+
+    endepurpleTex = LoadTextureFromImage(i1);
+    endeblueTex = LoadTextureFromImage(i2);
+    endemonochromeTex = LoadTextureFromImage(i3);
+    endewarmTex = LoadTextureFromImage(i4);
+
+    UnloadImage(i1);
+    UnloadImage(i2);
+    UnloadImage(i3);
+    UnloadImage(i4);
 }
 
 void StartMenuState::process(std::shared_ptr<Context>& m_context) {
@@ -33,6 +53,36 @@ void StartMenuState::process(std::shared_ptr<Context>& m_context) {
 void StartMenuState::draw(std::shared_ptr<Context>& m_context) {
     BeginDrawing();
     ClearBackground((Color){44, 44, 44, 255});
+
+    static bool shouldUpdate = false;
+    static int styleIndex = -1;
+
+    if (shouldUpdate) {
+        std::ifstream ifs("../endeconfig");
+        if (!ifs) {
+            std::cerr << "StartMenu::draw: Failed to open endeconfig file" << '\n';
+
+        } else {
+            std::string line;
+            int newIndex;
+            if (std::getline(ifs, line)) {
+                try {
+                    newIndex = std::stoi(line);
+                } catch (std::invalid_argument& e) {
+                    newIndex = -1;
+                }
+
+                if (styleIndex == -1) {
+                    StyleManager::initEndeStyle(ENDE_PURPLE);
+                }
+                if (newIndex != styleIndex && (newIndex >= 0 && newIndex < 4)) {
+                    styleIndex = newIndex;
+                    StyleManager::initEndeStyle(styleIndex);
+                }
+            }
+        }
+        ifs.close();
+    }
 
     rlImGuiBegin();
 
@@ -52,13 +102,19 @@ void StartMenuState::draw(std::shared_ptr<Context>& m_context) {
 
     ImGui::PopFont();
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 200));
-    ImGui::SetCursorPosY(25.0f);
+    ImGui::SetCursorPosY(15.0f);
 
     m_context->fontMgr.setMD();
     if (ImGui::Button("Create New Project", ImVec2(180, 40))) {
         ImGui::OpenPopup("Create Project");
     }
     ImGui::PopFont();
+
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 200));
+    ImGui::SetCursorPosY(70.0f);
+    if (ImGui::Button("Settings", ImVec2(180, 35))) {
+        ImGui::OpenPopup("Settings");
+    }
 
     if (ImGui::BeginPopupModal("Create Project", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
         m_context->fontMgr.setLG();
@@ -144,6 +200,91 @@ void StartMenuState::draw(std::shared_ptr<Context>& m_context) {
         ImGui::EndPopup();
     }
 
+    if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove)) {
+        m_context->fontMgr.setXL();
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::Dummy(ImVec2(5, 0));
+        ImGui::SameLine();
+        ImGui::Text("Ende Settings");
+        ImGui::PopFont();
+
+        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(60, 0));
+        ImGui::SameLine();
+        if (ImGui::Button("X")) {
+            showEmptyNameWarning = false;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::Dummy(ImVec2(0, 5));
+        ImGui::Dummy(ImVec2(5, 0));
+        ImGui::SameLine();
+        m_context->fontMgr.setLG();
+        ImGui::Text("Style");
+        ImGui::PopFont();
+
+        ImGui::Dummy(ImVec2(0, 5));
+        if (rlImGuiImageButton("EndePurpleStyle", &endepurpleTex, 64)) {
+            if (styleIndex != ENDE_PURPLE) {
+                shouldUpdate = true;
+                std::ofstream ofs("../endeconfig");
+
+                if (!ofs) {
+                    std::cerr << "StartMenu::draw: Failed to open endeconfig file" << '\n';
+
+                } else {
+                    ofs << ENDE_PURPLE;
+                }
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
+        if (rlImGuiImageButton("EndeBlueStyle", &endeblueTex, 64)) {
+            if (styleIndex != ENDE_BLUE) {
+                shouldUpdate = true;
+                std::ofstream ofs("../endeconfig");
+
+                if (!ofs) {
+                    std::cerr << "StartMenu::draw: Failed to open endeconfig file" << '\n';
+
+                } else {
+                    ofs << ENDE_BLUE;
+                }
+            }
+        }
+        if (rlImGuiImageButton("EndeMonochromeStyle", &endemonochromeTex, 64)) {
+            if (styleIndex != ENDE_MONOCHROME) {
+                shouldUpdate = true;
+                std::ofstream ofs("../endeconfig");
+
+                if (!ofs) {
+                    std::cerr << "StartMenu::draw: Failed to open endeconfig file" << '\n';
+
+                } else {
+                    ofs << ENDE_MONOCHROME;
+                }
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(10, 0));
+        ImGui::SameLine();
+        if (rlImGuiImageButton("EndeWarmStyle", &endewarmTex, 64)) {
+            if (styleIndex != ENDE_WARM) {
+                shouldUpdate = true;
+                std::ofstream ofs("../endeconfig");
+
+                if (!ofs) {
+                    std::cerr << "StartMenu::draw: Failed to open endeconfig file" << '\n';
+
+                } else {
+                    ofs << ENDE_WARM;
+                }
+            }
+        }
+        ImGui::EndPopup();
+    }
+
     ImGui::SetCursorPosX(30.0f);
     ImGui::SetCursorPosY(120.0f);
 
@@ -170,4 +311,9 @@ void StartMenuState::draw(std::shared_ptr<Context>& m_context) {
 
 void StartMenuState::clean(std::shared_ptr<Context>& m_context) {
     UnloadTexture(endelogo);
+
+    UnloadTexture(endepurpleTex);
+    UnloadTexture(endeblueTex);
+    UnloadTexture(endemonochromeTex);
+    UnloadTexture(endewarmTex);
 }

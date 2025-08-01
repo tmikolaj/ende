@@ -22,6 +22,11 @@ private:
 
     char seedBuffer[25];
     Noise noise;
+
+    Texture2D endepurpleTex;
+    Texture2D endeblueTex;
+    Texture2D endemonochromeTex;
+    Texture2D endewarmTex;
 public:
     StartMenuState();
     ~StartMenuState() override = default;
