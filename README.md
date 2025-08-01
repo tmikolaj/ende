@@ -2,7 +2,6 @@
 
 # 🌀 Ende - A 3D Procedural Generator
 
-[![License](https://img.shields.io/github/license/tmikolaj/ende?style=flat-square&color=blue)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/tmikolaj/ende?style=flat-square)](https://github.com/tmikolaj/ende/commits/main)
 
 ---
