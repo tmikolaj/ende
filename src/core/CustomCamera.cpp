@@ -47,7 +47,7 @@ void CustomCamera::update() {
         // Rotation handling
         // ------------------
         if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON) && !IsKeyDown(KEY_LEFT_SHIFT)) {
-            yaw += mouseDelta.x * rotateSpeed;
+            yaw += -mouseDelta.x * rotateSpeed;
             pitch += mouseDelta.y * rotateSpeed;
 
             const float maxPitch = glm::radians(89.0f);
